@@ -5,9 +5,7 @@ from pydantic import EmailStr
 from sqlalchemy import DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
-
-def get_datetime_utc() -> datetime:
-    return datetime.now(timezone.utc)
+from .utils import get_datetime_utc
 
 
 # Shared properties
@@ -54,6 +52,9 @@ class User(UserBase, table=True):
         sa_type=DateTime(timezone=True),  # type: ignore
     )
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+    assigned_enrollment_requests: list["EnrollmentRequest"] = Relationship(
+        back_populates="assigned_to"
+    )
 
 
 # Properties to return via API, id is always required

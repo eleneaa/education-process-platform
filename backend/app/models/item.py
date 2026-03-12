@@ -5,10 +5,7 @@ from sqlalchemy import DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
 from .user import User
-
-
-def get_datetime_utc() -> datetime:
-    return datetime.now(timezone.utc)
+from .utils import get_datetime_utc
 
 
 
