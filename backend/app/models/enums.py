@@ -19,3 +19,9 @@ class ProgramStatus(str, Enum):
     ON_REVIEW = "on_review"
     APPROVED = "approved"
     REJECTED = "rejected"
+
+class GroupStatus(str, Enum):
+    PLANNED = "planned"
+    ACTIVE = "active"
+    FINISHED = "finished"
+    CANCELED = "canceled"

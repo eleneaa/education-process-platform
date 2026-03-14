@@ -58,6 +58,9 @@ class User(UserBase, table=True):
     created_programs: list["Program"] = Relationship(
         back_populates="created_by"
     )
+    teaching_groups: list["Group"] = Relationship(
+        back_populates="teacher"
+    )
 
 
 # Properties to return via API, id is always required

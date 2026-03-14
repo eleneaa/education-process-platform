@@ -55,3 +55,7 @@ class Program (ProgramBase, table=True):
     modules: list["Module"] = Relationship(
         back_populates="program"
     )
+
+    groups: list["Group"] = Relationship(
+        back_populates="program"
+    )
