@@ -30,3 +30,8 @@ class EnrollmentStatus(str, Enum):
     ACTIVE = "active"
     COMPLETED = "completed"
     DROPPED = "dropped"
+
+class ProgressStatus(str, Enum):
+    NOT_STARTED = "not_started"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"

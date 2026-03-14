@@ -50,3 +50,6 @@ class Module (ModuleBase, table=True):
     program: Program | None = Relationship(
         back_populates="modules",
     )
+    progress_records: list["Progress"] = Relationship(
+        back_populates="module"
+    )
