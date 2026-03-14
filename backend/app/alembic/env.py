@@ -13,16 +13,28 @@ config = context.config
 assert config.config_file_name is not None
 fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
+# add your model'4af273aaa3db_init_schema.py MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
 
-from app.models import SQLModel  # noqa
+from sqlmodel import SQLModel # noqa
 from app.core.config import settings # noqa
 
+from app.models.user import User
+from app.models.enrollment_request import EnrollmentRequest
+from app.models.program import Program
+from app.models.module import Module
+from app.models.group import Group
+from app.models.enrollment import Enrollment
+from app.models.progress import Progress
+
+print("ALEMBIC TABLES:", SQLModel.metadata.tables.keys())
+
+
 target_metadata = SQLModel.metadata
+
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

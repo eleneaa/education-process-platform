@@ -11,13 +11,6 @@ from .user import (User,
                    TokenPayload,
                    UsersPublic,
                    NewPassword)
-from .item import (Item,
-                   ItemCreate,
-                   ItemsPublic,
-                   ItemPublic,
-                   ItemUpdate,
-                   ItemBase,
-                   )
 from .group import (Group,
                     GroupBase,
                     GroupPublic,

@@ -45,7 +45,7 @@ class Module (ModuleBase, table=True):
     program_id: uuid.UUID | None = Field(
         default=None,
         foreign_key="program.id",
-        nullable=True,
+        nullable=False,
         ondelete="CASCADE",
     )
     program: Program | None = Relationship(
