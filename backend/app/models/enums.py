@@ -13,3 +13,9 @@ class EnrollmentRequestStatus(str, Enum):
     IN_REVIEW = "in_review"
     APPROVED = "approved"
     REJECTED = "rejected"
+
+class ProgramStatus(str, Enum):
+    DRAFT = "draft"
+    ON_REVIEW = "on_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"

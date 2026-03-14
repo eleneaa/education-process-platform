@@ -55,6 +55,9 @@ class User(UserBase, table=True):
     assigned_enrollment_requests: list["EnrollmentRequest"] = Relationship(
         back_populates="assigned_to"
     )
+    created_programs: list["Program"] = Relationship(
+        back_populates="created_by"
+    )
 
 
 # Properties to return via API, id is always required
