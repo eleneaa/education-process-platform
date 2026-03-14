@@ -25,3 +25,8 @@ class GroupStatus(str, Enum):
     ACTIVE = "active"
     FINISHED = "finished"
     CANCELED = "canceled"
+
+class EnrollmentStatus(str, Enum):
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    DROPPED = "dropped"

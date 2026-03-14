@@ -75,3 +75,7 @@ class Group (GroupBase, table=True):
     )
 
     status: GroupStatus = Field(default=GroupStatus.PLANNED)
+
+    enrollments: list["Enrollment"] = Relationship(
+        back_populates="group",
+    )
