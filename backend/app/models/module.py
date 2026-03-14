@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import DateTime
 
 from .program import Program
 from .utils import get_datetime_utc

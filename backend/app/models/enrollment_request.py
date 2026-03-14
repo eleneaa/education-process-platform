@@ -3,6 +3,7 @@ from datetime import datetime
 
 from pydantic import EmailStr
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import DateTime
 
 from . import User
 from .enums import EnrollmentRequestSource, EnrollmentRequestStatus
