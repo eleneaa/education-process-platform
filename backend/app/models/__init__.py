@@ -29,12 +29,12 @@ from .enrollment import (Enrollment,
                          EnrollmentsPublic,
                          EnrollmentUpdate,
                          EnrollmentCreate)
-from .enrollment_request import (EnrollmentRequestBase,
-                                 EnrollmentRequest,
-                                 EnrollmentRequestCreate,
-                                 EnrollmentRequestPublic,
-                                 EnrollmentRequestsPublic,
-                                 EnrollmentRequestUpdate)
+from .admission_request import (AdmissionRequestBase,
+                                AdmissionRequest,
+                                AdmissionRequestCreate,
+                                AdmissionRequestPublic,
+                                AdmissionRequestsPublic,
+                                AdmissionRequestUpdate)
 from .module import (Module,
                      ModulePublic,
                      ModuleBase,

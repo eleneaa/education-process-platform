@@ -1,8 +1,8 @@
 """init schema
 
-Revision ID: 4af273aaa3db
+Revision ID: c7eb9e087eff
 Revises:
-Create Date: 2026-03-14 21:56:02.444048
+Create Date: 2026-03-15 13:22:51.175659
 
 """
 from alembic import op
@@ -11,7 +11,7 @@ import sqlmodel.sql.sqltypes
 
 
 # revision identifiers, used by Alembic.
-revision = '4af273aaa3db'
+revision = 'c7eb9e087eff'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,17 +30,17 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_user_email'), 'user', ['email'], unique=True)
-    op.create_table('enrollmentrequest',
+    op.create_table('admissionrequest',
     sa.Column('full_name', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('phone_number', sqlmodel.sql.sqltypes.AutoString(length=20), nullable=False),
     sa.Column('program_interest', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('comment', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
-    sa.Column('source', sa.Enum('WEBSITE', 'TELEGRAM', 'EMAIL', 'PHONE', 'OFFLINE', name='enrollmentrequestsource'), nullable=False),
+    sa.Column('source', sa.Enum('WEBSITE', 'TELEGRAM', 'EMAIL', 'PHONE', 'OFFLINE', name='admissionrequestsource'), nullable=False),
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.Column('status', sa.Enum('NEW', 'IN_REVIEW', 'APPROVED', 'REJECTED', name='enrollmentrequeststatus'), nullable=False),
+    sa.Column('status', sa.Enum('NEW', 'IN_REVIEW', 'APPROVED', 'REJECTED', name='admissionrequeststatus'), nullable=False),
     sa.Column('assigned_to_id', sa.Uuid(), nullable=True),
     sa.ForeignKeyConstraint(['assigned_to_id'], ['user.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
@@ -115,7 +115,7 @@ def downgrade():
     op.drop_table('module')
     op.drop_table('group')
     op.drop_table('program')
-    op.drop_table('enrollmentrequest')
+    op.drop_table('admissionrequest')
     op.drop_index(op.f('ix_user_email'), table_name='user')
     op.drop_table('user')
     # ### end Alembic commands ###

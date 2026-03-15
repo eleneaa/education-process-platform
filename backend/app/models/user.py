@@ -51,7 +51,7 @@ class User(UserBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
-    assigned_enrollment_requests: list["EnrollmentRequest"] = Relationship(
+    assigned_admission_requests: list["AdmissionRequest"] = Relationship(
         back_populates="assigned_to"
     )
     created_programs: list["Program"] = Relationship(

@@ -23,14 +23,13 @@ from sqlmodel import SQLModel # noqa
 from app.core.config import settings # noqa
 
 from app.models.user import User
-from app.models.enrollment_request import EnrollmentRequest
+from app.models.admission_request import AdmissionRequest
 from app.models.program import Program
 from app.models.module import Module
 from app.models.group import Group
 from app.models.enrollment import Enrollment
 from app.models.progress import Progress
 
-print("ALEMBIC TABLES:", SQLModel.metadata.tables.keys())
 
 
 target_metadata = SQLModel.metadata
