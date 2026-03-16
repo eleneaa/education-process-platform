@@ -3,8 +3,7 @@ from fastapi import APIRouter
 from app.api.routes import login, private, users, utils
 from app.core.config import settings
 
-from app.api.routes import admission_requests, program, module
-
+from app.api.routes import admission_requests, program, module, groups
 
 
 api_router = APIRouter()
@@ -14,6 +13,7 @@ api_router.include_router(utils.router)
 api_router.include_router(admission_requests.router)
 api_router.include_router(program.router)
 api_router.include_router(module.router)
+api_router.include_router(groups.router)
 
 
 if settings.ENVIRONMENT == "local":

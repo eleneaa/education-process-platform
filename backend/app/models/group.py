@@ -28,7 +28,7 @@ class GroupUpdate(SQLModel):
     teacher_id: uuid.UUID | None = None
     start_date: datetime | None = None
     end_date: datetime | None = None
-    status: GroupStatus | None
+    status: GroupStatus | None = None
 
 
 class GroupPublic(GroupBase):
