@@ -361,3 +361,60 @@ def test_delete_enrollment_not_found(
     )
     assert r.status_code == 404
     assert r.json()["detail"] == "Enrollment not found"
+
+
+def test_create_enrollment_duplicate_409(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    db: Session,
+) -> None:
+    """Enrolling the same student in the same group twice must return 409."""
+    super_user = crud_user.get_user_by_email(session=db, email=settings.FIRST_SUPERUSER)
+    assert super_user is not None
+
+    student = crud_user.create_user(
+        session=db,
+        user_create=UserCreate(
+            email=random_email(),
+            password=random_lower_string(),
+            full_name="Student Duplicate",
+        ),
+    )
+
+    program = crud_program.create_program(
+        session=db,
+        program_create=ProgramCreate(
+            title="Program for duplicate enrollment",
+            description="desc",
+        ),
+        created_by_id=super_user.id,
+    )
+
+    group = crud_group.create_group(
+        session=db,
+        group_create=GroupCreate(
+            name="Group Dup",
+            program_id=program.id,
+            start_date=datetime(2026, 1, 1),
+            end_date=datetime(2026, 12, 31),
+        ),
+    )
+
+    data = {"student_id": str(student.id), "group_id": str(group.id)}
+
+    # First enrollment – must succeed
+    r1 = client.post(
+        f"{settings.API_V1_STR}/enrollments/",
+        headers=superuser_token_headers,
+        json=data,
+    )
+    assert r1.status_code == 200
+
+    # Second enrollment – must fail with 409
+    r2 = client.post(
+        f"{settings.API_V1_STR}/enrollments/",
+        headers=superuser_token_headers,
+        json=data,
+    )
+    assert r2.status_code == 409
+    assert "already enrolled" in r2.json()["detail"]

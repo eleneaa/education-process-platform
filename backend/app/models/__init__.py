@@ -1,3 +1,4 @@
+from .enums import UserRole
 from .user import (User,
                    UserCreate,
                    UserUpdate,
@@ -47,3 +48,17 @@ from .program import (Program,
                       ProgramsPublic,
                       ProgramUpdate,
                       ProgramCreate)
+from .gamification import (Achievement,
+                           AchievementBase,
+                           AchievementCreate,
+                           AchievementUpdate,
+                           AchievementPublic,
+                           AchievementsPublic,
+                           UserPoints,
+                           UserPointsPublic,
+                           UserAchievement,
+                           UserAchievementCreate,
+                           UserAchievementPublic,
+                           UserAchievementsPublic,
+                           LeaderboardEntry,
+                           GroupLeaderboard)

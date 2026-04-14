@@ -6,6 +6,7 @@ from sqlalchemy import DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
 from .utils import get_datetime_utc
+from .enums import UserRole
 
 
 # Shared properties
@@ -14,6 +15,7 @@ class UserBase(SQLModel):
     is_active: bool = True
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
+    role: UserRole = Field(default=UserRole.STUDENT)
 
 
 # Properties to receive via API on creation
@@ -65,6 +67,12 @@ class User(UserBase, table=True):
     )
     progress_records: list["Progress"] = Relationship(
         back_populates="student"
+    )
+    points_record: "UserPoints | None" = Relationship(  # type: ignore
+        back_populates="user"
+    )
+    achievements: list["UserAchievement"] = Relationship(  # type: ignore
+        back_populates="user"
     )
 
 

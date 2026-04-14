@@ -55,3 +55,25 @@ def get_current_active_superuser(current_user: CurrentUser) -> User:
             status_code=403, detail="The user doesn't have enough privileges"
         )
     return current_user
+
+
+def get_current_admin(current_user: CurrentUser) -> User:
+    from app.models.enums import UserRole
+    if current_user.role != UserRole.ADMIN and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=403, detail="Admin privileges required"
+        )
+    return current_user
+
+
+def get_current_teacher_or_admin(current_user: CurrentUser) -> User:
+    from app.models.enums import UserRole
+    if current_user.role not in (UserRole.ADMIN, UserRole.TEACHER) and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=403, detail="Teacher or admin privileges required"
+        )
+    return current_user
+
+
+CurrentAdmin = Annotated[User, Depends(get_current_admin)]
+CurrentTeacherOrAdmin = Annotated[User, Depends(get_current_teacher_or_admin)]
