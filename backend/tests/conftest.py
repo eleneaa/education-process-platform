@@ -15,6 +15,9 @@ from app.models import (
     Program,
     Progress,
     User,
+    Achievement,
+    UserAchievement,
+    UserPoints,
 )
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
@@ -26,6 +29,9 @@ def db() -> Generator[Session, None, None]:
         init_db(session)
         yield session
 
+        session.execute(delete(UserAchievement))
+        session.execute(delete(UserPoints))
+        session.execute(delete(Achievement))
         session.execute(delete(Progress))
         session.execute(delete(Enrollment))
         session.execute(delete(Group))

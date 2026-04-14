@@ -5,6 +5,37 @@ from sqlmodel import Session, select, func
 from app.models import Enrollment, EnrollmentCreate, EnrollmentUpdate
 
 
+def get_enrollment_by_student_and_group(
+    *,
+    session: Session,
+    student_id: UUID,
+    group_id: UUID,
+) -> Enrollment | None:
+    statement = select(Enrollment).where(
+        Enrollment.student_id == student_id,
+        Enrollment.group_id == group_id,
+    )
+    return session.exec(statement).first()
+
+
+def get_enrollments_by_student(
+    *,
+    session: Session,
+    student_id: UUID,
+) -> list[Enrollment]:
+    statement = select(Enrollment).where(Enrollment.student_id == student_id)
+    return session.exec(statement).all()
+
+
+def get_enrollments_by_group(
+    *,
+    session: Session,
+    group_id: UUID,
+) -> list[Enrollment]:
+    statement = select(Enrollment).where(Enrollment.group_id == group_id)
+    return session.exec(statement).all()
+
+
 def create_enrollment(
     *,
     session: Session,

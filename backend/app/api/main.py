@@ -3,7 +3,17 @@ from fastapi import APIRouter
 from app.api.routes import login, private, users, utils
 from app.core.config import settings
 
-from app.api.routes import admission_requests, program, module, groups, enrollments, progresses
+from app.api.routes import (
+    admission_requests,
+    program,
+    module,
+    groups,
+    enrollments,
+    progresses,
+    gamification,
+    analytics,
+    trajectory,
+)
 
 
 api_router = APIRouter()
@@ -16,6 +26,9 @@ api_router.include_router(module.router)
 api_router.include_router(groups.router)
 api_router.include_router(enrollments.router)
 api_router.include_router(progresses.router)
+api_router.include_router(gamification.router)
+api_router.include_router(analytics.router)
+api_router.include_router(trajectory.router)
 
 
 if settings.ENVIRONMENT == "local":
