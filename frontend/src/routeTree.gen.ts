@@ -18,6 +18,11 @@ import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as LayoutAdmissionRequestsRouteImport } from './routes/_layout/admission-requests'
+import { Route as LayoutProgramsRouteImport } from './routes/_layout/programs'
+import { Route as LayoutGroupsRouteImport } from './routes/_layout/groups'
+import { Route as LayoutGamificationRouteImport } from './routes/_layout/gamification'
+import { Route as LayoutTrajectoryRouteImport } from './routes/_layout/trajectory'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -63,6 +68,31 @@ const LayoutAdminRoute = LayoutAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutAdmissionRequestsRoute = LayoutAdmissionRequestsRouteImport.update({
+  id: '/admission-requests',
+  path: '/admission-requests',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutProgramsRoute = LayoutProgramsRouteImport.update({
+  id: '/programs',
+  path: '/programs',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutGroupsRoute = LayoutGroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutGamificationRoute = LayoutGamificationRouteImport.update({
+  id: '/gamification',
+  path: '/gamification',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutTrajectoryRoute = LayoutTrajectoryRouteImport.update({
+  id: '/trajectory',
+  path: '/trajectory',
+  getParentRoute: () => LayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
@@ -72,6 +102,11 @@ export interface FileRoutesByFullPath {
   '/admin': typeof LayoutAdminRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
+  '/admission-requests': typeof LayoutAdmissionRequestsRoute
+  '/programs': typeof LayoutProgramsRoute
+  '/groups': typeof LayoutGroupsRoute
+  '/gamification': typeof LayoutGamificationRoute
+  '/trajectory': typeof LayoutTrajectoryRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesByTo {
@@ -82,6 +117,11 @@ export interface FileRoutesByTo {
   '/admin': typeof LayoutAdminRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
+  '/admission-requests': typeof LayoutAdmissionRequestsRoute
+  '/programs': typeof LayoutProgramsRoute
+  '/groups': typeof LayoutGroupsRoute
+  '/gamification': typeof LayoutGamificationRoute
+  '/trajectory': typeof LayoutTrajectoryRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesById {
@@ -94,6 +134,11 @@ export interface FileRoutesById {
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/items': typeof LayoutItemsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
+  '/_layout/admission-requests': typeof LayoutAdmissionRequestsRoute
+  '/_layout/programs': typeof LayoutProgramsRoute
+  '/_layout/groups': typeof LayoutGroupsRoute
+  '/_layout/gamification': typeof LayoutGamificationRoute
+  '/_layout/trajectory': typeof LayoutTrajectoryRoute
   '/_layout/': typeof LayoutIndexRoute
 }
 export interface FileRouteTypes {
@@ -106,6 +151,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/items'
     | '/settings'
+    | '/admission-requests'
+    | '/programs'
+    | '/groups'
+    | '/gamification'
+    | '/trajectory'
     | '/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -116,6 +166,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/items'
     | '/settings'
+    | '/admission-requests'
+    | '/programs'
+    | '/groups'
+    | '/gamification'
+    | '/trajectory'
     | '/'
   id:
     | '__root__'
@@ -127,6 +182,11 @@ export interface FileRouteTypes {
     | '/_layout/admin'
     | '/_layout/items'
     | '/_layout/settings'
+    | '/_layout/admission-requests'
+    | '/_layout/programs'
+    | '/_layout/groups'
+    | '/_layout/gamification'
+    | '/_layout/trajectory'
     | '/_layout/'
   fileRoutesById: FileRoutesById
 }
@@ -203,6 +263,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/admission-requests': {
+      id: '/_layout/admission-requests'
+      path: '/admission-requests'
+      fullPath: '/admission-requests'
+      preLoaderRoute: typeof LayoutAdmissionRequestsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/programs': {
+      id: '/_layout/programs'
+      path: '/programs'
+      fullPath: '/programs'
+      preLoaderRoute: typeof LayoutProgramsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/groups': {
+      id: '/_layout/groups'
+      path: '/groups'
+      fullPath: '/groups'
+      preLoaderRoute: typeof LayoutGroupsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/gamification': {
+      id: '/_layout/gamification'
+      path: '/gamification'
+      fullPath: '/gamification'
+      preLoaderRoute: typeof LayoutGamificationRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/trajectory': {
+      id: '/_layout/trajectory'
+      path: '/trajectory'
+      fullPath: '/trajectory'
+      preLoaderRoute: typeof LayoutTrajectoryRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
@@ -210,6 +305,11 @@ interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
+  LayoutAdmissionRequestsRoute: typeof LayoutAdmissionRequestsRoute
+  LayoutProgramsRoute: typeof LayoutProgramsRoute
+  LayoutGroupsRoute: typeof LayoutGroupsRoute
+  LayoutGamificationRoute: typeof LayoutGamificationRoute
+  LayoutTrajectoryRoute: typeof LayoutTrajectoryRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
@@ -217,6 +317,11 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutItemsRoute: LayoutItemsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
+  LayoutAdmissionRequestsRoute: LayoutAdmissionRequestsRoute,
+  LayoutProgramsRoute: LayoutProgramsRoute,
+  LayoutGroupsRoute: LayoutGroupsRoute,
+  LayoutGamificationRoute: LayoutGamificationRoute,
+  LayoutTrajectoryRoute: LayoutTrajectoryRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }
 
