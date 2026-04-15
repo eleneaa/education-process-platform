@@ -2,6 +2,8 @@ import axios from "axios"
 
 import type {
   AchievementsResponse,
+  Lesson,
+  LessonsResponse,
   AdmissionRequest,
   AdmissionRequestsResponse,
   EnrollmentsResponse,
@@ -220,6 +222,56 @@ export async function updateAdmissionRequestStatus(
   status: string,
 ): Promise<AdmissionRequest> {
   const { data } = await api.patch<AdmissionRequest>(`/admission-requests/${id}`, { status })
+  return data
+}
+
+// ─── Lessons ─────────────────────────────────────────────────────────────────
+
+export async function getLessons(groupId?: string): Promise<LessonsResponse> {
+  const params = groupId ? { group_id: groupId } : {}
+  const { data } = await api.get<LessonsResponse>("/lessons/", { params })
+  return data
+}
+
+export async function createLesson(body: {
+  title: string
+  description?: string | null
+  scheduled_at: string
+  duration_minutes?: number
+  location?: string | null
+  group_id: string
+}): Promise<Lesson> {
+  const { data } = await api.post<Lesson>("/lessons/", body)
+  return data
+}
+
+export async function updateLesson(id: string, body: {
+  title?: string
+  description?: string | null
+  scheduled_at?: string
+  duration_minutes?: number
+  location?: string | null
+}): Promise<Lesson> {
+  const { data } = await api.patch<Lesson>(`/lessons/${id}`, body)
+  return data
+}
+
+export async function deleteLesson(id: string): Promise<void> {
+  await api.delete(`/lessons/${id}`)
+}
+
+export async function createRecurringLessons(body: {
+  title: string
+  description?: string | null
+  group_id: string
+  first_date: string
+  time: string
+  duration_minutes?: number
+  location?: string | null
+  frequency: "weekly" | "biweekly"
+  count: number
+}): Promise<LessonsResponse> {
+  const { data } = await api.post<LessonsResponse>("/lessons/recurring", body)
   return data
 }
 

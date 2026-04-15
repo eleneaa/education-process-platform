@@ -51,6 +51,25 @@ export type ModuleCreate = {
   content?: string | null
 }
 
+// ─── Lessons ──────────────────────────────────────────────────────────────────
+
+export type Lesson = {
+  id: string
+  title: string
+  description?: string | null
+  scheduled_at: string
+  duration_minutes: number
+  location?: string | null
+  group_id: string
+  series_id?: string | null
+  created_at?: string | null
+}
+
+export type LessonsResponse = {
+  data: Lesson[]
+  count: number
+}
+
 // ─── Groups ───────────────────────────────────────────────────────────────────
 
 export type Group = {

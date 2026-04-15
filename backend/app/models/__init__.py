@@ -48,6 +48,7 @@ from .program import (Program,
                       ProgramsPublic,
                       ProgramUpdate,
                       ProgramCreate)
+from .lesson import (Lesson, LessonCreate, LessonUpdate, LessonPublic, LessonsPublic)
 from .gamification import (Achievement,
                            AchievementBase,
                            AchievementCreate,

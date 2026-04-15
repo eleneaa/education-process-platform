@@ -13,6 +13,7 @@ from app.api.routes import (
     gamification,
     analytics,
     trajectory,
+    lessons,
 )
 
 
@@ -29,6 +30,7 @@ api_router.include_router(progresses.router)
 api_router.include_router(gamification.router)
 api_router.include_router(analytics.router)
 api_router.include_router(trajectory.router)
+api_router.include_router(lessons.router)
 
 
 if settings.ENVIRONMENT == "local":

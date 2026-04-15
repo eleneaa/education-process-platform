@@ -5,11 +5,14 @@ import {
   Award,
   BookOpen,
   CheckSquare,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Star,
   Trophy,
   Users,
 } from "lucide-react"
+import { useState } from "react"
 import {
   Bar,
   BarChart,
@@ -27,12 +30,15 @@ import {
   getEnrollments,
   getGroupLeaderboard,
   getGroups,
+  getLessons,
   getPrograms,
   getProgresses,
   getUserAchievements,
   getUserPoints,
 } from "@/client/custom-api"
+
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
@@ -314,6 +320,11 @@ function TeacherDashboard({ userId }: { userId: string }) {
     queryFn: getPrograms,
     placeholderData: { data: [], count: 0 },
   })
+  const { data: teacherLessons } = useQuery({
+    queryKey: ["lessons"],
+    queryFn: () => getLessons(),
+    placeholderData: { data: [], count: 0 },
+  })
 
   const myGroups = (groups?.data ?? []).filter(
     (g) => g.teacher_id === userId,
@@ -397,46 +408,167 @@ function TeacherDashboard({ userId }: { userId: string }) {
         </Card>
       </div>
 
-      {/* Groups table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold uppercase tracking-wide">
-            Мои группы
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Название</TableHead>
-                <TableHead>Программа</TableHead>
-                <TableHead>Студентов</TableHead>
-                <TableHead>Прогресс</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {myGroups.length === 0 ? (
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Calendar for teacher */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold uppercase tracking-wide">Расписание</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MiniCalendar events={[
+              ...(teacherLessons?.data ?? []).map((l) => ({
+                date: new Date(l.scheduled_at),
+                label: l.title,
+                color: "#FF9935",
+              })),
+              ...myGroups.flatMap((g, i) => {
+                const colors = ["#3E6E85", "#9CCCE8", "#EE6C55"]
+                const color = colors[i % colors.length]
+                const evts = []
+                if (g.start_date) evts.push({ date: new Date(g.start_date), label: `Начало: ${g.name}`, color })
+                if (g.end_date) evts.push({ date: new Date(g.end_date), label: `Конец: ${g.name}`, color })
+                return evts
+              }),
+            ]} />
+          </CardContent>
+        </Card>
+
+        {/* Groups table */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold uppercase tracking-wide">Мои группы</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    Нет групп
-                  </TableCell>
+                  <TableHead>Название</TableHead>
+                  <TableHead>Программа</TableHead>
+                  <TableHead>Студентов</TableHead>
+                  <TableHead>Прогресс</TableHead>
                 </TableRow>
-              ) : (
-                myGroups.map((g) => (
-                  <TableRow key={g.id}>
-                    <TableCell className="font-medium">{g.name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {programMap[g.program_id] ?? g.program_id}
-                    </TableCell>
-                    <TableCell>{g.student_count ?? 0}</TableCell>
-                    <TableCell>0%</TableCell>
+              </TableHeader>
+              <TableBody>
+                {myGroups.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">Нет групп</TableCell>
                   </TableRow>
-                ))
+                ) : (
+                  myGroups.map((g) => (
+                    <TableRow key={g.id}>
+                      <TableCell className="font-medium">{g.name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{programMap[g.program_id] ?? g.program_id}</TableCell>
+                      <TableCell>{g.student_count ?? 0}</TableCell>
+                      <TableCell>0%</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Mini Calendar ────────────────────────────────────────────────────────────
+
+const MONTHS_RU = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"]
+const DAYS_RU = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"]
+
+interface CalendarEvent {
+  date: Date
+  label: string
+  color: string
+}
+
+function MiniCalendar({ events = [] }: { events?: CalendarEvent[] }) {
+  const today = new Date()
+  const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+
+  const year = current.getFullYear()
+  const month = current.getMonth()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+  // Monday-based weekday (0=Mon, 6=Sun)
+  const firstDayRaw = new Date(year, month, 1).getDay()
+  const firstDay = (firstDayRaw + 6) % 7
+
+  const eventMap = new Map<string, CalendarEvent[]>()
+  for (const ev of events) {
+    const key = `${ev.date.getFullYear()}-${ev.date.getMonth()}-${ev.date.getDate()}`
+    if (!eventMap.has(key)) eventMap.set(key, [])
+    eventMap.get(key)!.push(ev)
+  }
+
+  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  return (
+    <div className="space-y-3">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold">{MONTHS_RU[month]} {year}</span>
+        <div className="flex gap-1">
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setCurrent(new Date(year, month - 1, 1))}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setCurrent(new Date(year, month + 1, 1))}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Day headers */}
+      <div className="grid grid-cols-7 text-center">
+        {DAYS_RU.map((d) => (
+          <div key={d} className="text-xs text-muted-foreground font-medium py-1">{d}</div>
+        ))}
+      </div>
+
+      {/* Days */}
+      <div className="grid grid-cols-7 gap-y-1">
+        {cells.map((day, i) => {
+          if (!day) return <div key={i} />
+          const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
+          const key = `${year}-${month}-${day}`
+          const dayEvents = eventMap.get(key) ?? []
+          return (
+            <div key={i} className="flex flex-col items-center gap-0.5">
+              <div className={`h-7 w-7 flex items-center justify-center rounded-full text-sm transition-colors
+                ${isToday ? "bg-primary text-primary-foreground font-bold" : "hover:bg-muted"}
+              `}>
+                {day}
+              </div>
+              {dayEvents.length > 0 && (
+                <div className="flex gap-0.5">
+                  {dayEvents.slice(0, 3).map((ev, j) => (
+                    <div key={j} className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: ev.color }} title={ev.label} />
+                  ))}
+                </div>
               )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Legend */}
+      {events.length > 0 && (
+        <div className="border-t pt-3 space-y-1.5">
+          {events
+            .filter(ev => ev.date.getMonth() === month && ev.date.getFullYear() === year)
+            .slice(0, 4)
+            .map((ev, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs">
+                <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: ev.color }} />
+                <span className="text-muted-foreground">
+                  {ev.date.getDate()} {MONTHS_RU[ev.date.getMonth()].slice(0, 3).toLowerCase()} — {ev.label}
+                </span>
+              </div>
+            ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -464,22 +596,45 @@ function StudentDashboard({ userId }: { userId: string }) {
     queryFn: () => getUserAchievements(userId),
     placeholderData: { data: [], count: 0 },
   })
-  const { data: programs } = useQuery({
-    queryKey: ["programs"],
-    queryFn: getPrograms,
+  const { data: groups } = useQuery({
+    queryKey: ["groups"],
+    queryFn: getGroups,
+    placeholderData: { data: [], count: 0 },
+  })
+  const { data: lessonsData } = useQuery({
+    queryKey: ["lessons"],
+    queryFn: () => getLessons(),
     placeholderData: { data: [], count: 0 },
   })
 
-  const completedModules = (progresses?.data ?? []).filter(
-    (p) => p.status === "completed",
-  ).length
+  const completedModules = (progresses?.data ?? []).filter((p) => p.status === "completed").length
+  const inProgressModules = (progresses?.data ?? []).filter((p) => p.status === "in_progress").length
 
-  const programMap = Object.fromEntries(
-    (programs?.data ?? []).map((p) => [p.id, p.title]),
-  )
+  // My enrolled groups
+  const enrolledGroupIds = new Set((enrollments?.data ?? []).map((e) => e.group_id))
+  const myGroups = (groups?.data ?? []).filter((g) => enrolledGroupIds.has(g.id))
 
-  // Build per-enrollment label — use group name if available
-  const enrollmentRows = (enrollments?.data ?? []).slice(0, 5)
+  // Build calendar events — lessons + group dates
+  const calendarEvents: CalendarEvent[] = []
+  const GROUP_COLORS = ["#3E6E85", "#FF9935", "#9CCCE8", "#EE6C55"]
+
+  // Lessons (orange)
+  ;(lessonsData?.data ?? []).forEach((l) => {
+    calendarEvents.push({ date: new Date(l.scheduled_at), label: l.title, color: "#FF9935" })
+  })
+
+  // Group start/end dates
+  myGroups.forEach((g, i) => {
+    const color = GROUP_COLORS[(i + 1) % GROUP_COLORS.length]
+    if (g.start_date) calendarEvents.push({ date: new Date(g.start_date), label: `Начало: ${g.name}`, color })
+    if (g.end_date) calendarEvents.push({ date: new Date(g.end_date), label: `Конец: ${g.name}`, color })
+  })
+
+  // Upcoming lessons (next 5)
+  const today = new Date()
+  const upcomingLessons = (lessonsData?.data ?? [])
+    .filter((l) => new Date(l.scheduled_at) >= today)
+    .slice(0, 5)
 
   return (
     <div className="space-y-6">
@@ -490,56 +645,119 @@ function StudentDashboard({ userId }: { userId: string }) {
 
       {/* KPI */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard icon={BookOpen} label="Мои программы" value={enrollments?.count ?? 0} color="text-primary" />
+        <KpiCard icon={BookOpen} label="Мои группы" value={myGroups.length} color="text-primary" />
         <KpiCard icon={CheckSquare} label="Завершено модулей" value={completedModules} color="text-[#9CCCE8]" />
-        <KpiCard icon={Star} label="Мои очки" value={points?.points ?? 0} color="text-primary" />
+        <KpiCard icon={Star} label="Мои очки" value={points?.points ?? 0} color="text-[#FF9935]" />
         <KpiCard icon={Award} label="Достижений" value={achievements?.count ?? 0} color="text-[#EE6C55]" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Progress per enrollment */}
+      <div className="grid gap-4 lg:grid-cols-4">
+        {/* Calendar */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold uppercase tracking-wide">
-              Мой прогресс
+              Расписание
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {enrollmentRows.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Нет записей</p>
+          <CardContent>
+            <MiniCalendar events={calendarEvents} />
+          </CardContent>
+        </Card>
+
+        {/* Upcoming lessons */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+              Ближайшие занятия
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {upcomingLessons.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Нет предстоящих занятий</p>
             ) : (
-              enrollmentRows.map((e) => {
-                const label = e.group?.name ?? programMap[e.group?.program_id ?? ""] ?? e.group_id
-                return <ProgressBar key={e.id} label={label} value={0} />
+              upcomingLessons.map((l) => {
+                const dt = new Date(l.scheduled_at)
+                const myGroup = myGroups.find((g) => g.id === l.group_id)
+                return (
+                  <div key={l.id} className="flex gap-3 rounded-md bg-muted/50 px-3 py-2">
+                    <div className="flex flex-col items-center justify-center w-10 shrink-0 text-center">
+                      <span className="text-lg font-bold leading-none text-primary">{dt.getDate()}</span>
+                      <span className="text-xs text-muted-foreground">{MONTHS_RU[dt.getMonth()].slice(0, 3)}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{l.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {dt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })} · {l.duration_minutes} мин
+                        {myGroup ? ` · ${myGroup.name}` : ""}
+                        {l.location ? ` · ${l.location}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                )
               })
             )}
           </CardContent>
         </Card>
 
-        {/* Achievements */}
+        {/* My groups progress */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold uppercase tracking-wide">
-              Мои достижения
+              Мои группы
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {myGroups.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Нет записей</p>
+            ) : (
+              myGroups.map((g) => (
+                <div key={g.id} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="truncate max-w-[70%]">{g.name}</span>
+                    <Badge variant="outline" className="text-xs">{
+                      g.status === "active" ? "Активна" :
+                      g.status === "planned" ? "Скоро" :
+                      g.status === "finished" ? "Завершена" : g.status
+                    }</Badge>
+                  </div>
+                  {g.start_date && g.end_date && (
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(g.start_date).toLocaleDateString("ru-RU")} — {new Date(g.end_date).toLocaleDateString("ru-RU")}
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Achievements & progress */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+              Достижения
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Points progress */}
+            <div className="flex items-center gap-3 mb-4 p-3 rounded-md bg-muted">
+              <Star className="h-5 w-5 text-[#FF9935] shrink-0" />
+              <div>
+                <p className="text-lg font-bold">{points?.points ?? 0} очков</p>
+                <p className="text-xs text-muted-foreground">{completedModules} завершено · {inProgressModules} в процессе</p>
+              </div>
+            </div>
             <div className="space-y-2">
               {(achievements?.data ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">Нет достижений</p>
               ) : (
-                (achievements?.data ?? []).slice(0, 5).map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-center gap-3 rounded-md bg-gray-50 px-3 py-2"
-                  >
+                (achievements?.data ?? []).slice(0, 4).map((a) => (
+                  <div key={a.id} className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2">
                     <Trophy className="h-4 w-4 text-[#FF9935] shrink-0" />
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{a.title}</p>
                       {a.points_required != null && (
-                        <p className="text-xs text-muted-foreground">
-                          {a.points_required} очков
-                        </p>
+                        <p className="text-xs text-muted-foreground">{a.points_required} очков</p>
                       )}
                     </div>
                   </div>

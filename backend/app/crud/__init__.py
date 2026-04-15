@@ -9,4 +9,5 @@ from . import (
     crud_progress,
     crud_admission_request,
     crud_gamification,
+    crud_lesson,
 )
