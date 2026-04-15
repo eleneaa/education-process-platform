@@ -279,7 +279,7 @@ function AdminDashboard({ userId: _userId }: { userId: string }) {
                   recentRequests.map((req) => (
                     <TableRow key={req.id}>
                       <TableCell className="text-sm">
-                        {req.applicant_name ?? req.applicant_email ?? "—"}
+                        {req.full_name ?? req.email ?? "—"}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {req.created_at

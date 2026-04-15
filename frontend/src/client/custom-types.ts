@@ -202,13 +202,17 @@ export type Leaderboard = {
 
 export type AdmissionRequest = {
   id: string
-  applicant_name?: string | null
-  applicant_email?: string | null
-  responsible?: string | null
+  full_name: string
+  email?: string | null
+  phone_number: string
+  program_interest?: string | null
+  comment?: string | null
+  source: string
   status: "new" | "in_review" | "approved" | "rejected" | string
+  assigned_to_id?: string | null
+  assigned_to_name?: string | null
   created_at?: string | null
   updated_at?: string | null
-  program_id?: string | null
   notes?: string | null
 }
 

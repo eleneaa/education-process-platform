@@ -177,6 +177,26 @@ export async function getAdmissionRequests(
   return data
 }
 
+export async function createAdmissionRequest(body: {
+  full_name: string
+  email?: string | null
+  phone_number: string
+  program_interest?: string | null
+  comment?: string | null
+  source: string
+}): Promise<AdmissionRequest> {
+  const { data } = await api.post<AdmissionRequest>("/admission-requests/", body)
+  return data
+}
+
+export async function updateAdmissionRequest(
+  id: string,
+  body: { status?: string; assigned_to_id?: string | null },
+): Promise<AdmissionRequest> {
+  const { data } = await api.patch<AdmissionRequest>(`/admission-requests/${id}`, body)
+  return data
+}
+
 export async function updateAdmissionRequestStatus(
   id: string,
   status: string,

@@ -1,16 +1,36 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.crud import crud_admission_request
-from app.api.deps import SessionDep
+from app.api.deps import SessionDep, CurrentUser
 from app.models import (
     AdmissionRequest,
     AdmissionRequestCreate,
+    AdmissionRequestPublic,
     AdmissionRequestUpdate,
     AdmissionRequestsPublic,
+    User,
 )
+from sqlmodel import SQLModel
+
+
+class AdmissionRequestEnriched(AdmissionRequestPublic):
+    assigned_to_name: str | None = None
+
+
+class AdmissionRequestsEnrichedPublic(AdmissionRequestsPublic):
+    data: list[AdmissionRequestEnriched]  # type: ignore
+
+
+def _enrich(session, req) -> AdmissionRequestEnriched:
+    data = AdmissionRequestEnriched.model_validate(req)
+    if req.assigned_to_id:
+        user = session.get(User, req.assigned_to_id)
+        if user:
+            data.assigned_to_name = user.full_name or user.email
+    return data
 
 router = APIRouter(
     prefix="/admission-requests",
@@ -18,9 +38,11 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=AdmissionRequestsPublic)
+@router.get("/", response_model=AdmissionRequestsEnrichedPublic)
 def read_admission_requests(
     session: SessionDep,
+    current_user: CurrentUser,
+    status: str | None = Query(default=None),
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
@@ -34,10 +56,13 @@ def read_admission_requests(
         limit=limit,
     )
 
-    count = crud_admission_request.get_admission_requests_count(session=session)
+    if status:
+        admission_requests = [r for r in admission_requests if r.status == status]
 
-    return AdmissionRequestsPublic(
-        data=admission_requests,
+    count = len(admission_requests)
+
+    return AdmissionRequestsEnrichedPublic(
+        data=[_enrich(session, r) for r in admission_requests],
         count=count,
     )
 
@@ -83,7 +108,7 @@ def create_admission_request(
     return admission_request
 
 
-@router.patch("/{admission_request_id}", response_model=AdmissionRequest)
+@router.patch("/{admission_request_id}", response_model=AdmissionRequestEnriched)
 def update_admission_request(
     *,
     session: SessionDep,
@@ -111,7 +136,7 @@ def update_admission_request(
         admission_request_in=admission_request_in,
     )
 
-    return admission_request
+    return _enrich(session, admission_request)
 
 
 @router.delete("/{admission_request_id}")
