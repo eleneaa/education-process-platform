@@ -37,6 +37,8 @@ class GroupPublic(GroupBase):
     updated_at: datetime | None = None
     program_id: uuid.UUID
     teacher_id: uuid.UUID | None = None
+    teacher_name: str | None = None
+    student_count: int = 0
     start_date: datetime | None = None
     end_date: datetime | None = None
     status: GroupStatus = Field(default=GroupStatus.PLANNED)
