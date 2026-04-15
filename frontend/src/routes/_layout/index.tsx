@@ -23,7 +23,6 @@ import {
 } from "recharts"
 
 import {
-  getAllAchievements,
   getAdmissionRequests,
   getEnrollments,
   getGroupLeaderboard,
@@ -118,7 +117,7 @@ function StatusBadge({ status }: { status: string }) {
 
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 
-function AdminDashboard({ userId }: { userId: string }) {
+function AdminDashboard({ userId: _userId }: { userId: string }) {
   const { data: admissionAll } = useQuery({
     queryKey: ["admission-requests"],
     queryFn: () => getAdmissionRequests(),

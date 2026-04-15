@@ -5,7 +5,6 @@ from sqlmodel import Session, select, func
 
 from app.models import Program, ProgramCreate, ProgramUpdate
 from app.models.utils import get_datetime_utc
-from app.api.deps import CurrentUser
 
 
 def create_program(

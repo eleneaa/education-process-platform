@@ -36,22 +36,25 @@ def get_module_by_id(
 def get_modules(
     *,
     session: Session,
+    program_id: UUID | None = None,
     skip: int = 0,
     limit: int = 100,
 ) -> list[Module]:
-    statement = (
-        select(Module)
-        .offset(skip)
-        .limit(limit)
-    )
+    statement = select(Module)
+    if program_id:
+        statement = statement.where(Module.program_id == program_id)
+    statement = statement.offset(skip).limit(limit)
     return session.exec(statement).all()
 
 
 def get_modules_count(
     *,
     session: Session,
+    program_id: UUID | None = None,
 ) -> int:
     statement = select(func.count()).select_from(Module)
+    if program_id:
+        statement = statement.where(Module.program_id == program_id)
     return session.exec(statement).one()
 
 

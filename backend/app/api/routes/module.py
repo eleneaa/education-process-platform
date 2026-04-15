@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.crud import crud_module
 from app.api.deps import SessionDep, CurrentUser, CurrentTeacherOrAdmin
@@ -18,6 +18,7 @@ router = APIRouter(
 def read_modules(
     session: SessionDep,
     current_user: CurrentUser,
+    program_id: UUID | None = Query(default=None),
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
@@ -27,11 +28,12 @@ def read_modules(
 
     modules = crud_module.get_modules(
         session=session,
+        program_id=program_id,
         skip=skip,
         limit=limit,
     )
 
-    count = crud_module.get_modules_count(session=session)
+    count = crud_module.get_modules_count(session=session, program_id=program_id)
 
     return ModulesPublic(
         data=modules,

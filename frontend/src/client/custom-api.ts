@@ -1,7 +1,6 @@
 import axios from "axios"
 
 import type {
-  Achievement,
   AchievementsResponse,
   AdmissionRequest,
   AdmissionRequestsResponse,
@@ -19,13 +18,8 @@ import type {
   UserPoints,
 } from "./custom-types"
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("access_token")
-  return token ? { Authorization: `Bearer ${token}` } : {}
-}
-
 const api = axios.create({
-  baseURL: "/api/v1",
+  baseURL: `${import.meta.env.VITE_API_URL}/api/v1`,
 })
 
 api.interceptors.request.use((config) => {
@@ -48,11 +42,21 @@ export async function createProgram(body: ProgramCreate) {
   return data
 }
 
+export async function updateProgram(id: string, body: Partial<ProgramCreate>) {
+  const { data } = await api.patch(`/programs/${id}`, body)
+  return data
+}
+
 // ─── Modules ──────────────────────────────────────────────────────────────────
 
 export async function getModules(programId?: string): Promise<ModulesResponse> {
   const params = programId ? { program_id: programId } : {}
   const { data } = await api.get<ModulesResponse>("/modules/", { params })
+  return data
+}
+
+export async function createModule(body: { title: string; description?: string | null; program_id: string; position?: number | null }) {
+  const { data } = await api.post("/modules/", body)
   return data
 }
 

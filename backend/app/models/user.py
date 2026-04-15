@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timezone
+from typing import Optional
 
 from pydantic import EmailStr
 from sqlalchemy import DateTime
@@ -68,7 +69,7 @@ class User(UserBase, table=True):
     progress_records: list["Progress"] = Relationship(
         back_populates="student"
     )
-    points_record: "UserPoints | None" = Relationship(  # type: ignore
+    points_record: Optional["UserPoints"] = Relationship(  # type: ignore
         back_populates="user"
     )
     achievements: list["UserAchievement"] = Relationship(  # type: ignore

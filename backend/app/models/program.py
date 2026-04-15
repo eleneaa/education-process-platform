@@ -15,7 +15,7 @@ class ProgramBase(SQLModel):
 
 
 class ProgramCreate(ProgramBase):
-    pass
+    status: ProgramStatus = Field(default=ProgramStatus.DRAFT)
 
 
 class ProgramUpdate(SQLModel):
