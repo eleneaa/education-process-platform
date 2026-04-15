@@ -9,22 +9,38 @@ export type UserTableData = UserPublic & {
   isCurrentUser: boolean
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Администратор",
+  teacher: "Преподаватель",
+  student: "Студент",
+  ADMIN: "Администратор",
+  TEACHER: "Преподаватель",
+  STUDENT: "Студент",
+}
+
+const ROLE_VARIANTS: Record<string, "default" | "secondary" | "outline"> = {
+  admin: "default",
+  teacher: "outline",
+  student: "secondary",
+  ADMIN: "default",
+  TEACHER: "outline",
+  STUDENT: "secondary",
+}
+
 export const columns: ColumnDef<UserTableData>[] = [
   {
     accessorKey: "full_name",
-    header: "Full Name",
+    header: "ФИО",
     cell: ({ row }) => {
       const fullName = row.original.full_name
       return (
         <div className="flex items-center gap-2">
-          <span
-            className={cn("font-medium", !fullName && "text-muted-foreground")}
-          >
-            {fullName || "N/A"}
+          <span className={cn("font-medium", !fullName && "text-muted-foreground")}>
+            {fullName || "—"}
           </span>
           {row.original.isCurrentUser && (
             <Badge variant="outline" className="text-xs">
-              You
+              Вы
             </Badge>
           )}
         </div>
@@ -39,17 +55,21 @@ export const columns: ColumnDef<UserTableData>[] = [
     ),
   },
   {
-    accessorKey: "is_superuser",
-    header: "Role",
-    cell: ({ row }) => (
-      <Badge variant={row.original.is_superuser ? "default" : "secondary"}>
-        {row.original.is_superuser ? "Superuser" : "User"}
-      </Badge>
-    ),
+    accessorKey: "role",
+    header: "Роль",
+    cell: ({ row }) => {
+      const role = row.original.role
+      if (row.original.is_superuser) {
+        return <Badge variant="default">Суперпользователь</Badge>
+      }
+      const label = role ? (ROLE_LABELS[role] ?? role) : "Студент"
+      const variant = role ? (ROLE_VARIANTS[role] ?? "secondary") : "secondary"
+      return <Badge variant={variant}>{label}</Badge>
+    },
   },
   {
     accessorKey: "is_active",
-    header: "Status",
+    header: "Статус",
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <span
@@ -59,14 +79,14 @@ export const columns: ColumnDef<UserTableData>[] = [
           )}
         />
         <span className={row.original.is_active ? "" : "text-muted-foreground"}>
-          {row.original.is_active ? "Active" : "Inactive"}
+          {row.original.is_active ? "Активен" : "Неактивен"}
         </span>
       </div>
     ),
   },
   {
     id: "actions",
-    header: () => <span className="sr-only">Actions</span>,
+    header: () => <span className="sr-only">Действия</span>,
     cell: ({ row }) => (
       <div className="flex justify-end">
         <UserActionsMenu user={row.original} />
