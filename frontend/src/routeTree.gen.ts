@@ -23,6 +23,7 @@ import { Route as LayoutProgramsRouteImport } from './routes/_layout/programs'
 import { Route as LayoutGroupsRouteImport } from './routes/_layout/groups'
 import { Route as LayoutGamificationRouteImport } from './routes/_layout/gamification'
 import { Route as LayoutTrajectoryRouteImport } from './routes/_layout/trajectory'
+import { Route as LayoutProgramsProgramIdRouteImport } from './routes/_layout/programs_.$programId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -93,6 +94,11 @@ const LayoutTrajectoryRoute = LayoutTrajectoryRouteImport.update({
   path: '/trajectory',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutProgramsProgramIdRoute = LayoutProgramsProgramIdRouteImport.update({
+  id: '/programs_/$programId',
+  path: '/programs/$programId',
+  getParentRoute: () => LayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof LayoutSettingsRoute
   '/admission-requests': typeof LayoutAdmissionRequestsRoute
   '/programs': typeof LayoutProgramsRoute
+  '/programs/$programId': typeof LayoutProgramsProgramIdRoute
   '/groups': typeof LayoutGroupsRoute
   '/gamification': typeof LayoutGamificationRoute
   '/trajectory': typeof LayoutTrajectoryRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/settings': typeof LayoutSettingsRoute
   '/admission-requests': typeof LayoutAdmissionRequestsRoute
   '/programs': typeof LayoutProgramsRoute
+  '/programs/$programId': typeof LayoutProgramsProgramIdRoute
   '/groups': typeof LayoutGroupsRoute
   '/gamification': typeof LayoutGamificationRoute
   '/trajectory': typeof LayoutTrajectoryRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/admission-requests': typeof LayoutAdmissionRequestsRoute
   '/_layout/programs': typeof LayoutProgramsRoute
+  '/_layout/programs/$programId': typeof LayoutProgramsProgramIdRoute
   '/_layout/groups': typeof LayoutGroupsRoute
   '/_layout/gamification': typeof LayoutGamificationRoute
   '/_layout/trajectory': typeof LayoutTrajectoryRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/admission-requests'
     | '/programs'
+    | '/programs/$programId'
     | '/groups'
     | '/gamification'
     | '/trajectory'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/admission-requests'
     | '/programs'
+    | '/programs/$programId'
     | '/groups'
     | '/gamification'
     | '/trajectory'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/_layout/settings'
     | '/_layout/admission-requests'
     | '/_layout/programs'
+    | '/_layout/programs_/$programId'
     | '/_layout/groups'
     | '/_layout/gamification'
     | '/_layout/trajectory'
@@ -277,6 +289,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutProgramsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/programs_/$programId': {
+      id: '/_layout/programs_/$programId'
+      path: '/programs/$programId'
+      fullPath: '/programs/$programId'
+      preLoaderRoute: typeof LayoutProgramsProgramIdRouteImport
+      parentRoute: typeof LayoutRoute
+      params: { programId: string }
+    }
     '/_layout/groups': {
       id: '/_layout/groups'
       path: '/groups'
@@ -307,6 +327,7 @@ interface LayoutRouteChildren {
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutAdmissionRequestsRoute: typeof LayoutAdmissionRequestsRoute
   LayoutProgramsRoute: typeof LayoutProgramsRoute
+  LayoutProgramsProgramIdRoute: typeof LayoutProgramsProgramIdRoute
   LayoutGroupsRoute: typeof LayoutGroupsRoute
   LayoutGamificationRoute: typeof LayoutGamificationRoute
   LayoutTrajectoryRoute: typeof LayoutTrajectoryRoute
@@ -319,6 +340,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutAdmissionRequestsRoute: LayoutAdmissionRequestsRoute,
   LayoutProgramsRoute: LayoutProgramsRoute,
+  LayoutProgramsProgramIdRoute: LayoutProgramsProgramIdRoute,
   LayoutGroupsRoute: LayoutGroupsRoute,
   LayoutGamificationRoute: LayoutGamificationRoute,
   LayoutTrajectoryRoute: LayoutTrajectoryRoute,

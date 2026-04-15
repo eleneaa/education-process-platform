@@ -24,13 +24,16 @@ export type ProgramCreate = {
 
 // ─── Modules ──────────────────────────────────────────────────────────────────
 
+export type ModuleType = "theoretical" | "practical" | "test"
+
 export type Module = {
   id: string
   title: string
   description?: string | null
   program_id: string
   position?: number | null
-  status?: string | null
+  module_type?: ModuleType | null
+  content?: string | null
   created_at?: string | null
 }
 
@@ -44,7 +47,8 @@ export type ModuleCreate = {
   description?: string | null
   program_id: string
   position?: number | null
-  status?: string | null
+  module_type?: ModuleType | null
+  content?: string | null
 }
 
 // ─── Groups ───────────────────────────────────────────────────────────────────

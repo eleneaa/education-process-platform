@@ -2,9 +2,10 @@ import uuid
 from datetime import datetime
 
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, Text
 
 from .program import Program
+from .enums import ModuleType
 from .utils import get_datetime_utc
 
 
@@ -12,6 +13,8 @@ class ModuleBase(SQLModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=255)
     position: int | None = None
+    module_type: str = Field(default="theoretical")
+    content: str | None = Field(default=None, sa_type=Text)  # type: ignore
 
 
 class ModuleCreate(ModuleBase):
@@ -22,6 +25,8 @@ class ModuleUpdate(SQLModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=255)
     position: int | None = None
+    module_type: str | None = None
+    content: str | None = None
 
 
 class ModulePublic(ModuleBase):

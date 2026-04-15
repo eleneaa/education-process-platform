@@ -26,6 +26,11 @@ class ProgramStatus(str, Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
 
+class ModuleType(str, Enum):
+    THEORETICAL = "theoretical"
+    PRACTICAL = "practical"
+    TEST = "test"
+
 class GroupStatus(str, Enum):
     PLANNED = "planned"
     ACTIVE = "active"

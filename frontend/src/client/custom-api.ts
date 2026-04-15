@@ -56,8 +56,26 @@ export async function getModules(programId?: string): Promise<ModulesResponse> {
   return data
 }
 
-export async function createModule(body: { title: string; description?: string | null; program_id: string; position?: number | null }) {
+export async function createModule(body: {
+  title: string
+  description?: string | null
+  program_id: string
+  position?: number | null
+  module_type?: string | null
+  content?: string | null
+}) {
   const { data } = await api.post("/modules/", body)
+  return data
+}
+
+export async function updateModule(id: string, body: {
+  title?: string
+  description?: string | null
+  position?: number | null
+  module_type?: string | null
+  content?: string | null
+}) {
+  const { data } = await api.patch(`/modules/${id}`, body)
   return data
 }
 
