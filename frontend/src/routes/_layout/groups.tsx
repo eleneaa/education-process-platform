@@ -1,17 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Plus, Users } from "lucide-react"
+import { Plus, Trash2, Users } from "lucide-react"
 import { useState } from "react"
 
 import {
   createEnrollment,
   createGroup,
+  deleteEnrollment,
+  deleteGroup,
   getEnrollments,
   getGroups,
   getPrograms,
   getUsers,
 } from "@/client/custom-api"
-import type { Group } from "@/client/custom-types"
+import type { Enrollment, Group } from "@/client/custom-types"
 import type { UserPublic } from "@/client/types.gen"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -40,6 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 
@@ -237,6 +240,48 @@ function CreateGroupDialog({
 
 // ─── Manage Students Dialog ───────────────────────────────────────────────────
 
+function EnrollmentRow({
+  enrollment,
+  onDeleted,
+}: {
+  enrollment: Enrollment
+  onDeleted: () => void
+}) {
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
+  const mutation = useMutation({
+    mutationFn: () => deleteEnrollment(enrollment.id),
+    onSuccess: () => { showSuccessToast("Студент удалён из группы"); onDeleted() },
+    onError: () => showErrorToast("Не удалось удалить"),
+  })
+
+  return (
+    <>
+      <ConfirmDeleteDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Удалить студента из группы?"
+        description={`${enrollment.student_name ?? enrollment.student_email ?? "Студент"} будет отчислен из группы.`}
+        onConfirm={() => mutation.mutate()}
+        isPending={mutation.isPending}
+      />
+      <div className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
+        <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="font-medium truncate">{enrollment.student_name ?? enrollment.student_email ?? enrollment.student_id}</p>
+          {enrollment.student_name && enrollment.student_email && (
+            <p className="text-xs text-muted-foreground truncate">{enrollment.student_email}</p>
+          )}
+        </div>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive shrink-0" onClick={() => setConfirmOpen(true)}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </>
+  )
+}
+
 function ManageStudentsDialog({
   open,
   onOpenChange,
@@ -300,20 +345,14 @@ function ManageStudentsDialog({
               </p>
             ) : (
               enrollments.map((e) => (
-                <div
+                <EnrollmentRow
                   key={e.id}
-                  className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm"
-                >
-                  <Users className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">
-                      {e.student_name ?? e.student_email ?? e.student_id}
-                    </p>
-                    {e.student_name && e.student_email && (
-                      <p className="text-xs text-muted-foreground truncate">{e.student_email}</p>
-                    )}
-                  </div>
-                </div>
+                  enrollment={e}
+                  onDeleted={() => {
+                    queryClient.invalidateQueries({ queryKey: ["enrollments", "group", group.id] })
+                    queryClient.invalidateQueries({ queryKey: ["groups"] })
+                  }}
+                />
               ))
             )}
           </div>
@@ -364,8 +403,21 @@ function ManageStudentsDialog({
 
 function GroupsPage() {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
   const [createOpen, setCreateOpen] = useState(false)
   const [studentsGroup, setStudentsGroup] = useState<Group | null>(null)
+  const [deleteGroup_, setDeleteGroup] = useState<Group | null>(null)
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteGroup(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["groups"] })
+      showSuccessToast("Группа удалена")
+      setDeleteGroup(null)
+    },
+    onError: () => showErrorToast("Не удалось удалить группу"),
+  })
 
   const { data: groups, isError } = useQuery({
     queryKey: ["groups"],
@@ -395,6 +447,14 @@ function GroupsPage() {
   return (
     <div className="space-y-6">
       <CreateGroupDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <ConfirmDeleteDialog
+        open={!!deleteGroup_}
+        onOpenChange={(o) => !o && setDeleteGroup(null)}
+        title="Удалить группу?"
+        description={`Группа «${deleteGroup_?.name}» и все зачисления будут удалены безвозвратно.`}
+        onConfirm={() => deleteGroup_ && deleteMutation.mutate(deleteGroup_.id)}
+        isPending={deleteMutation.isPending}
+      />
       {studentsGroup && (
         <ManageStudentsDialog
           open={!!studentsGroup}
@@ -469,14 +529,20 @@ function GroupsPage() {
                     </TableCell>
                     {canManage && (
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setStudentsGroup(g)}
-                        >
-                          <Users className="h-3.5 w-3.5 mr-1" />
-                          Студенты
-                        </Button>
+                        <div className="flex gap-1.5">
+                          <Button size="sm" variant="outline" onClick={() => setStudentsGroup(g)}>
+                            <Users className="h-3.5 w-3.5 mr-1" />
+                            Студенты
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setDeleteGroup(g)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>

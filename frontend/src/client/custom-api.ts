@@ -222,3 +222,21 @@ export async function updateAdmissionRequestStatus(
   const { data } = await api.patch<AdmissionRequest>(`/admission-requests/${id}`, { status })
   return data
 }
+
+// ─── Delete functions ─────────────────────────────────────────────────────────
+
+export async function deleteProgram(id: string): Promise<void> {
+  await api.delete(`/programs/${id}`)
+}
+
+export async function deleteModule(id: string): Promise<void> {
+  await api.delete(`/modules/${id}`)
+}
+
+export async function deleteGroup(id: string): Promise<void> {
+  await api.delete(`/groups/${id}`)
+}
+
+export async function deleteEnrollment(id: string): Promise<void> {
+  await api.delete(`/enrollments/${id}`)
+}

@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { BookOpen, Eye, Pencil, Plus, Search } from "lucide-react"
+import { BookOpen, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react"
 import { useState } from "react"
 
 import {
   createModule,
   createProgram,
+  deleteProgram,
   getModules,
   getPrograms,
   updateModule,
@@ -15,6 +16,7 @@ import type { Module, Program } from "@/client/custom-types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import {
   Dialog,
   DialogContent,
@@ -368,12 +370,14 @@ function ProgramCard({
   canManage,
   onEdit,
   onModules,
+  onDelete,
 }: {
   program: Program
   moduleCount: number
   canManage: boolean
   onEdit: (p: Program) => void
   onModules: (p: Program) => void
+  onDelete: (p: Program) => void
 }) {
   return (
     <Card className="flex flex-col hover:shadow-md transition-shadow">
@@ -414,6 +418,9 @@ function ProgramCard({
             <Button size="sm" variant="outline" onClick={() => onModules(program)}>
               <Plus className="h-3.5 w-3.5" />
             </Button>
+            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => onDelete(program)}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
           </>
         )}
       </CardFooter>
@@ -433,11 +440,24 @@ const STATUS_FILTERS = [
 
 function ProgramsPage() {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
   const [createOpen, setCreateOpen] = useState(false)
   const [editProgram, setEditProgram] = useState<Program | null>(null)
   const [modulesProgram, setModulesProgram] = useState<Program | null>(null)
+  const [deleteProgram_, setDeleteProgram] = useState<Program | null>(null)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteProgram(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] })
+      showSuccessToast("Программа удалена")
+      setDeleteProgram(null)
+    },
+    onError: () => showErrorToast("Не удалось удалить программу"),
+  })
 
   const { data: programs, isError } = useQuery({
     queryKey: ["programs"],
@@ -474,6 +494,14 @@ function ProgramsPage() {
   return (
     <div className="space-y-6">
       <ProgramDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <ConfirmDeleteDialog
+        open={!!deleteProgram_}
+        onOpenChange={(o) => !o && setDeleteProgram(null)}
+        title="Удалить программу?"
+        description={`Программа «${deleteProgram_?.title}» и все её модули будут удалены безвозвратно.`}
+        onConfirm={() => deleteProgram_ && deleteMutation.mutate(deleteProgram_.id)}
+        isPending={deleteMutation.isPending}
+      />
       {editProgram && (
         <ProgramDialog
           open={!!editProgram}
@@ -544,6 +572,7 @@ function ProgramsPage() {
               canManage={canManage}
               onEdit={setEditProgram}
               onModules={setModulesProgram}
+              onDelete={setDeleteProgram}
             />
           ))}
         </div>
