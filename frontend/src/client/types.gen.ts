@@ -75,6 +75,7 @@ export type UserPublic = {
     is_active?: boolean;
     is_superuser?: boolean;
     full_name?: (string | null);
+    role?: ('ADMIN' | 'TEACHER' | 'STUDENT' | 'admin' | 'teacher' | 'student' | null);
     id: string;
     created_at?: (string | null);
 };

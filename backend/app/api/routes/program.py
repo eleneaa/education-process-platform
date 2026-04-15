@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException
 
 from app.crud import crud_program
-from app.api.deps import SessionDep, CurrentUser
+from app.api.deps import SessionDep, CurrentUser, CurrentTeacherOrAdmin
 
 from app.models import ProgramsPublic, Program, ProgramCreate, ProgramUpdate
 
@@ -17,6 +17,7 @@ router = APIRouter(
 @router.get("/", response_model=ProgramsPublic)
 def read_programs(
     session: SessionDep,
+    current_user: CurrentUser,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
@@ -42,6 +43,7 @@ def read_programs(
 def read_program(
     program_id: UUID,
     session: SessionDep,
+    current_user: CurrentUser,
 ) -> Any:
     """
     Get program by id.
@@ -66,7 +68,7 @@ def create_program(
     *,
     session: SessionDep,
     program_in: ProgramCreate,
-    current_user: CurrentUser,
+    current_user: CurrentTeacherOrAdmin,
 ) -> Any:
     """
     Create new program.
@@ -87,6 +89,7 @@ def update_program(
     session: SessionDep,
     program_id: UUID,
     program_in: ProgramUpdate,
+    current_user: CurrentTeacherOrAdmin,
 ) -> Any:
     """
     Update program.
@@ -117,6 +120,7 @@ def delete_program(
     *,
     session: SessionDep,
     program_id: UUID,
+    current_user: CurrentTeacherOrAdmin,
 ) -> Any:
     """
     Delete program.

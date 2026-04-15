@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException
 
 from app.crud import crud_module
-from app.api.deps import SessionDep
+from app.api.deps import SessionDep, CurrentUser, CurrentTeacherOrAdmin
 
 from app.models import ModulesPublic, Module, ModuleCreate, ModuleUpdate, ModulePublic
 
@@ -17,6 +17,7 @@ router = APIRouter(
 @router.get("/", response_model=ModulesPublic)
 def read_modules(
     session: SessionDep,
+    current_user: CurrentUser,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
@@ -42,6 +43,7 @@ def read_modules(
 def read_module(
     module_id: UUID,
     session: SessionDep,
+    current_user: CurrentUser,
 ) -> Any:
     """
     Get module by id.
@@ -66,6 +68,7 @@ def create_module(
     *,
     session: SessionDep,
     module_in: ModuleCreate,
+    current_user: CurrentTeacherOrAdmin,
 ) -> Any:
     """
     Create new module.
@@ -85,6 +88,7 @@ def update_module(
     session: SessionDep,
     module_id: UUID,
     module_in: ModuleUpdate,
+    current_user: CurrentTeacherOrAdmin,
 ) -> Any:
     """
     Update module.
@@ -115,6 +119,7 @@ def delete_module(
     *,
     session: SessionDep,
     module_id: UUID,
+    current_user: CurrentTeacherOrAdmin,
 ) -> Any:
     """
     Delete module.
