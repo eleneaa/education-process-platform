@@ -17,6 +17,7 @@ import type {
   UserAchievementsResponse,
   UserPoints,
 } from "./custom-types"
+import type { UsersPublic } from "./types.gen"
 
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL}/api/v1`,
@@ -60,6 +61,13 @@ export async function createModule(body: { title: string; description?: string |
   return data
 }
 
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+export async function getUsers(limit = 200): Promise<UsersPublic> {
+  const { data } = await api.get<UsersPublic>("/users/", { params: { limit } })
+  return data
+}
+
 // ─── Groups ───────────────────────────────────────────────────────────────────
 
 export async function getGroups(): Promise<GroupsResponse> {
@@ -81,8 +89,10 @@ export async function createGroup(body: {
 
 // ─── Enrollments ──────────────────────────────────────────────────────────────
 
-export async function getEnrollments(studentId?: string): Promise<EnrollmentsResponse> {
-  const params = studentId ? { student_id: studentId } : {}
+export async function getEnrollments(studentId?: string, groupId?: string): Promise<EnrollmentsResponse> {
+  const params: Record<string, string> = {}
+  if (studentId) params.student_id = studentId
+  if (groupId) params.group_id = groupId
   const { data } = await api.get<EnrollmentsResponse>("/enrollments/", { params })
   return data
 }

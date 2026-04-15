@@ -86,6 +86,8 @@ export type Enrollment = {
   status?: string | null
   enrolled_at?: string | null
   group?: Group | null
+  student_name?: string | null
+  student_email?: string | null
 }
 
 export type EnrollmentsResponse = {

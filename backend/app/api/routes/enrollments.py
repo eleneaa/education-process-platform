@@ -1,11 +1,12 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
+from sqlmodel import select
 
 from app.crud import crud_enrollment
 from app.api.deps import SessionDep, CurrentUser, CurrentTeacherOrAdmin
-from app.models import EnrollmentCreate, EnrollmentPublic, EnrollmentUpdate, EnrollmentsPublic
+from app.models import EnrollmentCreate, EnrollmentPublic, EnrollmentUpdate, EnrollmentsPublic, User
 
 router = APIRouter(
     prefix="/enrollments",
@@ -13,10 +14,29 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=EnrollmentsPublic)
+class EnrollmentWithStudent(EnrollmentPublic):
+    student_name: str | None = None
+    student_email: str | None = None
+
+
+class EnrollmentsWithStudentsPublic(EnrollmentsPublic):
+    data: list[EnrollmentWithStudent]  # type: ignore
+
+
+def _enrich_enrollment(session, enrollment) -> EnrollmentWithStudent:
+    student = session.get(User, enrollment.student_id)
+    data = EnrollmentWithStudent.model_validate(enrollment)
+    if student:
+        data.student_name = student.full_name or student.email
+        data.student_email = student.email
+    return data
+
+
+@router.get("/", response_model=EnrollmentsWithStudentsPublic)
 def read_enrollments(
     session: SessionDep,
     current_user: CurrentUser,
+    group_id: UUID | None = Query(default=None),
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
@@ -29,11 +49,24 @@ def read_enrollments(
             session=session,
             student_id=current_user.id,
         )
-        return EnrollmentsPublic(data=enrollments, count=len(enrollments))
+        return EnrollmentsWithStudentsPublic(
+            data=[_enrich_enrollment(session, e) for e in enrollments],
+            count=len(enrollments),
+        )
+
+    if group_id:
+        enrollments = crud_enrollment.get_enrollments_by_group(session=session, group_id=group_id)
+        return EnrollmentsWithStudentsPublic(
+            data=[_enrich_enrollment(session, e) for e in enrollments],
+            count=len(enrollments),
+        )
 
     enrollments = crud_enrollment.get_enrollments(session=session, skip=skip, limit=limit)
     count = crud_enrollment.get_enrollments_count(session=session)
-    return EnrollmentsPublic(data=enrollments, count=count)
+    return EnrollmentsWithStudentsPublic(
+        data=[_enrich_enrollment(session, e) for e in enrollments],
+        count=count,
+    )
 
 
 @router.get("/{enrollment_id}", response_model=EnrollmentPublic)
