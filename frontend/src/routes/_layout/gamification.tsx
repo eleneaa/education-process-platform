@@ -33,11 +33,11 @@ function AchievementCard({
           <div className="flex items-center gap-3">
             <div
               className={`rounded-full p-2 ${
-                earned ? "bg-orange-100" : "bg-gray-100"
+                earned ? "bg-primary/10" : "bg-gray-100"
               }`}
             >
               <Trophy
-                className={`h-5 w-5 ${earned ? "text-orange-500" : "text-gray-400"}`}
+                className={`h-5 w-5 ${earned ? "text-[#FF9935]" : "text-gray-400"}`}
               />
             </div>
             <CardTitle className="text-sm">{achievement.title}</CardTitle>
@@ -125,8 +125,8 @@ function StudentGamification({ userId }: { userId: string }) {
       {/* Points summary */}
       <Card className="bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200">
         <CardContent className="flex items-center gap-4 pt-6">
-          <div className="rounded-full bg-orange-100 p-4">
-            <Star className="h-6 w-6 text-orange-500" />
+          <div className="rounded-full bg-primary/10 p-4">
+            <Star className="h-6 w-6 text-[#FF9935]" />
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Мои очки</p>

@@ -180,10 +180,10 @@ function AdminDashboard({ userId: _userId }: { userId: string }) {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard icon={Users} label="Всего студентов" value={uniqueStudents} color="text-blue-600" />
-        <KpiCard icon={BookOpen} label="Активных групп" value={groups?.count ?? 0} color="text-green-600" />
-        <KpiCard icon={ClipboardList} label="Новых заявок" value={admissionNew?.count ?? 0} color="text-orange-600" />
-        <KpiCard icon={Star} label="Программ" value={programs?.count ?? 0} color="text-purple-600" />
+        <KpiCard icon={Users} label="Всего студентов" value={uniqueStudents} color="text-primary" />
+        <KpiCard icon={BookOpen} label="Активных групп" value={groups?.count ?? 0} color="text-[#9CCCE8]" />
+        <KpiCard icon={ClipboardList} label="Новых заявок" value={admissionNew?.count ?? 0} color="text-primary" />
+        <KpiCard icon={Star} label="Программ" value={programs?.count ?? 0} color="text-[#EE6C55]" />
       </div>
 
       {/* Charts row */}
@@ -201,7 +201,7 @@ function AdminDashboard({ userId: _userId }: { userId: string }) {
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#f97316" radius={[4, 4, 0, 0]} name="Заявки" />
+                <Bar dataKey="count" fill="#3E6E85" radius={[4, 4, 0, 0]} name="Заявки" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -223,7 +223,7 @@ function AdminDashboard({ userId: _userId }: { userId: string }) {
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke="#f97316"
+                  stroke="#FF9935"
                   strokeWidth={2}
                   dot={{ r: 4 }}
                   name="Активность"
@@ -342,9 +342,9 @@ function TeacherDashboard({ userId }: { userId: string }) {
 
       {/* KPI */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <KpiCard icon={BookOpen} label="Мои группы" value={myGroups.length} color="text-blue-600" />
-        <KpiCard icon={Users} label="Студентов в группах" value={totalStudents} color="text-green-600" />
-        <KpiCard icon={CheckSquare} label="Ср. прогресс" value="0%" color="text-orange-600" />
+        <KpiCard icon={BookOpen} label="Мои группы" value={myGroups.length} color="text-primary" />
+        <KpiCard icon={Users} label="Студентов в группах" value={totalStudents} color="text-[#9CCCE8]" />
+        <KpiCard icon={CheckSquare} label="Ср. прогресс" value="0%" color="text-primary" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -381,7 +381,7 @@ function TeacherDashboard({ userId }: { userId: string }) {
                   className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-orange-500">#{entry.rank}</span>
+                    <span className="text-sm font-bold text-[#FF9935]">#{entry.rank}</span>
                     <span className="text-sm">
                       {entry.full_name ?? entry.email ?? entry.student_id}
                     </span>
@@ -490,10 +490,10 @@ function StudentDashboard({ userId }: { userId: string }) {
 
       {/* KPI */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard icon={BookOpen} label="Мои программы" value={enrollments?.count ?? 0} color="text-blue-600" />
-        <KpiCard icon={CheckSquare} label="Завершено модулей" value={completedModules} color="text-green-600" />
-        <KpiCard icon={Star} label="Мои очки" value={points?.points ?? 0} color="text-orange-600" />
-        <KpiCard icon={Award} label="Достижений" value={achievements?.count ?? 0} color="text-purple-600" />
+        <KpiCard icon={BookOpen} label="Мои программы" value={enrollments?.count ?? 0} color="text-primary" />
+        <KpiCard icon={CheckSquare} label="Завершено модулей" value={completedModules} color="text-[#9CCCE8]" />
+        <KpiCard icon={Star} label="Мои очки" value={points?.points ?? 0} color="text-primary" />
+        <KpiCard icon={Award} label="Достижений" value={achievements?.count ?? 0} color="text-[#EE6C55]" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -533,7 +533,7 @@ function StudentDashboard({ userId }: { userId: string }) {
                     key={a.id}
                     className="flex items-center gap-3 rounded-md bg-gray-50 px-3 py-2"
                   >
-                    <Trophy className="h-4 w-4 text-orange-500 shrink-0" />
+                    <Trophy className="h-4 w-4 text-[#FF9935] shrink-0" />
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{a.title}</p>
                       {a.points_required != null && (

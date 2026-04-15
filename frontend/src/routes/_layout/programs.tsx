@@ -380,8 +380,8 @@ function ProgramCard({
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="rounded-md bg-orange-100 p-2 shrink-0">
-              <BookOpen className="h-4 w-4 text-orange-600" />
+            <div className="rounded-md bg-primary/10 p-2 shrink-0">
+              <BookOpen className="h-4 w-4 text-primary" />
             </div>
             <CardTitle className="text-base leading-tight truncate">{program.title}</CardTitle>
           </div>

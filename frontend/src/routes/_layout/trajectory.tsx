@@ -37,7 +37,7 @@ function trajectoryStatusVariant(
 
 function actionColor(action: string): string {
   if (action === "Начать") return "text-blue-600"
-  if (action === "Продолжить") return "text-orange-600"
+  if (action === "Продолжить") return "text-primary"
   if (action === "Повторить") return "text-green-600"
   return "text-muted-foreground"
 }
