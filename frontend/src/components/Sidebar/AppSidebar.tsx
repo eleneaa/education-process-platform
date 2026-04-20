@@ -39,8 +39,8 @@ const teacherItems: Item[] = [
 
 const studentItems: Item[] = [
   { icon: Home, title: "Дашборд", path: "/" },
-  { icon: BookOpen, title: "Мои программы", path: "/programs" },
-  { icon: Map, title: "Моя траектория", path: "/trajectory" },
+  { icon: BookOpen, title: "Мои программы", path: "/my-programs" },
+  { icon: Map, title: "Траектория", path: "/trajectory" },
   { icon: Award, title: "Достижения", path: "/gamification" },
 ]
 
