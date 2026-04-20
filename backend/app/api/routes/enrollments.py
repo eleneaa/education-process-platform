@@ -17,6 +17,9 @@ router = APIRouter(
 class EnrollmentWithStudent(EnrollmentPublic):
     student_name: str | None = None
     student_email: str | None = None
+    program_id: UUID | None = None
+    program_title: str | None = None
+    group_name: str | None = None
 
 
 class EnrollmentsWithStudentsPublic(EnrollmentsPublic):
@@ -24,11 +27,26 @@ class EnrollmentsWithStudentsPublic(EnrollmentsPublic):
 
 
 def _enrich_enrollment(session, enrollment) -> EnrollmentWithStudent:
+    from app.models import Group, Program
+
     student = session.get(User, enrollment.student_id)
     data = EnrollmentWithStudent.model_validate(enrollment)
     if student:
         data.student_name = student.full_name or student.email
         data.student_email = student.email
+
+    # Get program info from group
+    try:
+        group = session.exec(select(Group).where(Group.id == enrollment.group_id)).first()
+        if group:
+            data.program_id = group.program_id
+            data.group_name = group.name
+            program = session.exec(select(Program).where(Program.id == group.program_id)).first()
+            if program:
+                data.program_title = program.title
+    except Exception:
+        pass
+
     return data
 
 

@@ -36,6 +36,7 @@ class GroupPublic(GroupBase):
     created_at: datetime | None = None
     updated_at: datetime | None = None
     program_id: uuid.UUID
+    program_title: str | None = None
     teacher_id: uuid.UUID | None = None
     teacher_name: str | None = None
     student_count: int = 0

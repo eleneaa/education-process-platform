@@ -15,7 +15,7 @@ router = APIRouter(
 
 
 def _enrich_group(session, group) -> GroupPublic:
-    """Add teacher_name and student_count to a GroupPublic response."""
+    """Add teacher_name, student_count, and program_title to a GroupPublic response."""
     teacher_name = None
     if group.teacher_id:
         teacher = session.get(User, group.teacher_id)
@@ -26,9 +26,18 @@ def _enrich_group(session, group) -> GroupPublic:
         select(func.count()).select_from(Enrollment).where(Enrollment.group_id == group.id)
     ).one()
 
+    # Get program title
+    program_title = None
+    if group.program_id:
+        from app.models import Program
+        program = session.get(Program, group.program_id)
+        if program:
+            program_title = program.title
+
     data = GroupPublic.model_validate(group)
     data.teacher_name = teacher_name
     data.student_count = student_count
+    data.program_title = program_title
     return data
 
 

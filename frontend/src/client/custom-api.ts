@@ -1,7 +1,9 @@
 import axios from "axios"
 
 import type {
+  Achievement,
   AchievementsResponse,
+  Progress,
   Lesson,
   LessonsResponse,
   AdmissionRequest,
@@ -134,6 +136,24 @@ export async function getProgresses(studentId?: string): Promise<ProgressesRespo
   return data
 }
 
+export async function createProgress(body: {
+  student_id: string
+  module_id: string
+  status: "not_started" | "in_progress" | "completed"
+  score?: number | null
+}): Promise<Progress> {
+  const { data } = await api.post<Progress>("/progresses/", body)
+  return data
+}
+
+export async function updateProgress(id: string, body: {
+  status?: "not_started" | "in_progress" | "completed"
+  score?: number | null
+}): Promise<Progress> {
+  const { data } = await api.patch<Progress>(`/progresses/${id}`, body)
+  return data
+}
+
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
 export async function getStudentProgramProgress(
@@ -168,6 +188,24 @@ export async function getStudentTrajectory(
 export async function getAllAchievements(): Promise<AchievementsResponse> {
   const { data } = await api.get<AchievementsResponse>("/gamification/achievements")
   return data
+}
+
+export async function createAchievement(body: {
+  title: string; description?: string | null; points_required: number; icon?: string | null
+}): Promise<Achievement> {
+  const { data } = await api.post<Achievement>("/gamification/achievements", body)
+  return data
+}
+
+export async function updateAchievement(id: string, body: {
+  title?: string; description?: string | null; points_required?: number; icon?: string | null
+}): Promise<Achievement> {
+  const { data } = await api.patch<Achievement>(`/gamification/achievements/${id}`, body)
+  return data
+}
+
+export async function deleteAchievement(id: string): Promise<void> {
+  await api.delete(`/gamification/achievements/${id}`)
 }
 
 export async function getUserPoints(userId: string): Promise<UserPoints> {

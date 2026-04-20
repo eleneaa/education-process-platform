@@ -76,6 +76,7 @@ export type Group = {
   id: string
   name: string
   program_id: string
+  program_title?: string | null
   teacher_id?: string | null
   status?: string | null
   start_date?: string | null
@@ -106,6 +107,9 @@ export type Enrollment = {
   id: string
   student_id: string
   group_id: string
+  program_id?: string | null
+  program_title?: string | null
+  group_name?: string | null
   status?: string | null
   enrolled_at?: string | null
   group?: Group | null

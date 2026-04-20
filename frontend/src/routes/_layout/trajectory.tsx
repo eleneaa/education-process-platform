@@ -1,145 +1,129 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { ArrowRight, BookOpen, CheckCircle, Circle } from "lucide-react"
+import { BookOpen, CheckCircle, Circle, Clock } from "lucide-react"
 
-import { getEnrollments, getPrograms, getStudentTrajectory } from "@/client/custom-api"
-import type { Enrollment, Trajectory } from "@/client/custom-types"
+import {
+  getEnrollments,
+  getModules,
+  getProgresses,
+} from "@/client/custom-api"
+import type { Progress } from "@/client/custom-types"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/trajectory")({
   component: TrajectoryPage,
-  beforeLoad: async () => {
-    // Students only; admin/teacher redirected away
-  },
   head: () => ({
     meta: [{ title: "Моя траектория" }],
   }),
 })
 
-function trajectoryStatusLabel(status: string): string {
-  const map: Record<string, string> = {
-    not_started: "Не начато",
-    in_progress: "В процессе",
-    completed: "Завершено",
-  }
-  return map[status] ?? status
+const MODULE_TYPE_LABELS: Record<string, string> = {
+  theoretical: "Теория",
+  practical: "Практика",
+  test: "Тест",
 }
 
-function trajectoryStatusVariant(
-  status: string,
-): "default" | "secondary" | "outline" {
-  if (status === "completed") return "outline"
-  if (status === "in_progress") return "default"
-  return "secondary"
-}
+// ─── Per-program trajectory ───────────────────────────────────────────────────
 
-function actionColor(action: string): string {
-  if (action === "Начать") return "text-blue-600"
-  if (action === "Продолжить") return "text-primary"
-  if (action === "Повторить") return "text-green-600"
-  return "text-muted-foreground"
-}
-
-function ProgressBar({ value }: { value: number }) {
-  return (
-    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-      <div
-        className="h-full bg-orange-500 rounded-full transition-all"
-        style={{ width: `${Math.min(value, 100)}%` }}
-      />
-    </div>
-  )
-}
-
-function EnrollmentTrajectory({
-  enrollment,
+function ProgramTrajectory({
+  programId,
   programTitle,
+  groupName,
+  progresses,
 }: {
-  enrollment: Enrollment
+  programId: string
   programTitle: string
+  groupName: string
+  progresses: Progress[]
 }) {
-  const programId = enrollment.group?.program_id ?? ""
-  const studentId = enrollment.student_id
-
-  const { data: trajectory, isError } = useQuery<Trajectory>({
-    queryKey: ["trajectory", programId, studentId],
-    queryFn: () => getStudentTrajectory(programId, studentId),
-    enabled: !!programId && !!studentId,
-    placeholderData: {
-      status: "not_started",
-      percentage: 0,
-      recommendations: [],
-    },
+  const { data: modulesData } = useQuery({
+    queryKey: ["modules", programId],
+    queryFn: () => getModules(programId),
+    enabled: !!programId,
+    placeholderData: { data: [], count: 0 },
   })
 
-  if (isError) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{programTitle}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-destructive">Ошибка загрузки траектории</p>
-        </CardContent>
-      </Card>
-    )
-  }
+  const modules = (modulesData?.data ?? []).slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+  const progressMap = new Map(progresses.map((p) => [p.module_id, p]))
 
-  const traj = trajectory ?? { status: "not_started", percentage: 0, recommendations: [] }
+  const completed = modules.filter((m) => progressMap.get(m.id)?.status === "completed").length
+  const inProgress = modules.filter((m) => progressMap.get(m.id)?.status === "in_progress").length
+  const percentage = modules.length > 0 ? Math.round((completed / modules.length) * 100) : 0
+
+  const overallStatus = percentage === 100 ? "completed" : inProgress > 0 || completed > 0 ? "in_progress" : "not_started"
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base">{programTitle}</CardTitle>
-          <Badge variant={trajectoryStatusVariant(traj.status)}>
-            {trajectoryStatusLabel(traj.status)}
+        <div className="flex items-start justify-between gap-2 flex-wrap">
+          <div>
+            <CardTitle className="text-base">{programTitle}</CardTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">{groupName}</p>
+          </div>
+          <Badge variant={overallStatus === "completed" ? "default" : overallStatus === "in_progress" ? "outline" : "secondary"}>
+            {overallStatus === "completed" ? "Завершено" : overallStatus === "in_progress" ? "В процессе" : "Не начато"}
           </Badge>
         </div>
-        <div className="space-y-1">
+
+        <div className="space-y-1 mt-1">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Прогресс</span>
-            <span className="font-medium">{traj.percentage}%</span>
+            <span className="text-muted-foreground">{completed} из {modules.length} модулей</span>
+            <span className="font-medium">{percentage}%</span>
           </div>
-          <ProgressBar value={traj.percentage} />
+          <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${percentage}%` }} />
+          </div>
         </div>
       </CardHeader>
 
-      {traj.recommendations.length > 0 && (
-        <CardContent className="pt-0">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Рекомендации
-          </p>
-          <div className="space-y-2">
-            {traj.recommendations.slice(0, 3).map((rec) => (
+      <CardContent className="pt-0 space-y-1.5">
+        {modules.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">Модулей пока нет</p>
+        ) : (
+          modules.map((m, i) => {
+            const status = progressMap.get(m.id)?.status ?? "not_started"
+            return (
               <div
-                key={rec.module_id}
-                className="flex items-center gap-3 rounded-md bg-gray-50 px-3 py-2"
+                key={m.id}
+                className={`flex items-center gap-3 rounded-md border px-4 py-2.5 ${
+                  status === "completed" ? "bg-primary/5 border-primary/20" :
+                  status === "in_progress" ? "border-[#FF9935]/30 bg-[#FF9935]/5" : ""
+                }`}
               >
+                <span className="text-muted-foreground text-xs w-5 shrink-0 text-right">{i + 1}</span>
                 <div className="shrink-0">
-                  {rec.action === "Повторить" ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  {status === "completed" ? (
+                    <CheckCircle className="h-4 w-4 text-primary" />
+                  ) : status === "in_progress" ? (
+                    <Clock className="h-4 w-4 text-[#FF9935]" />
                   ) : (
-                    <Circle className="h-4 w-4 text-gray-300" />
+                    <Circle className="h-4 w-4 text-muted-foreground" />
                   )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm">{rec.title}</p>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm truncate ${status === "completed" ? "text-muted-foreground line-through" : "font-medium"}`}>
+                    {m.title}
+                  </p>
                 </div>
-                <div className={`flex items-center gap-1 text-xs font-medium shrink-0 ${actionColor(rec.action)}`}>
-                  <span>{rec.action}</span>
-                  <ArrowRight className="h-3 w-3" />
-                </div>
+                <span className="text-xs text-muted-foreground shrink-0">{MODULE_TYPE_LABELS[m.module_type ?? "theoretical"]}</span>
+                {status === "completed" && (
+                  <span className="text-xs text-primary font-medium shrink-0">✓</span>
+                )}
+                {status === "in_progress" && (
+                  <span className="text-xs text-[#FF9935] font-medium shrink-0">...</span>
+                )}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      )}
+            )
+          })
+        )}
+      </CardContent>
     </Card>
   )
 }
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 function TrajectoryPage() {
   const { user } = useAuth()
@@ -149,32 +133,27 @@ function TrajectoryPage() {
     queryFn: () => getEnrollments(user!.id),
     enabled: !!user?.id,
     placeholderData: { data: [], count: 0 },
+    staleTime: 0,
+    gcTime: 0,
   })
-  const { data: programs } = useQuery({
-    queryKey: ["programs"],
-    queryFn: getPrograms,
+  const { data: progressesData } = useQuery({
+    queryKey: ["progresses", user?.id],
+    queryFn: () => getProgresses(user!.id),
+    enabled: !!user?.id,
     placeholderData: { data: [], count: 0 },
   })
 
-  const programMap = Object.fromEntries(
-    (programs?.data ?? []).map((p) => [p.id, p.title]),
-  )
+  const progresses = progressesData?.data ?? []
 
-  if (isError) {
-    return <p className="text-destructive">Ошибка загрузки данных</p>
-  }
+  if (isError) return <p className="text-destructive">Ошибка загрузки данных</p>
 
   const enrollmentList = enrollments?.data ?? []
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight uppercase">
-          Моя траектория
-        </h1>
-        <p className="text-muted-foreground">
-          Персональный путь обучения по каждой программе
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight uppercase">Моя траектория</h1>
+        <p className="text-muted-foreground">Прогресс обучения по программам</p>
       </div>
 
       {enrollmentList.length === 0 ? (
@@ -183,18 +162,18 @@ function TrajectoryPage() {
           <p className="text-muted-foreground">Вы не записаны ни в одну программу</p>
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="space-y-6">
           {enrollmentList.map((e) => {
-            const programId = e.group?.program_id ?? ""
-            const title =
-              programMap[programId] ??
-              e.group?.name ??
-              e.group_id
+            const programId = e.program_id ?? ""
+            const programTitle = e.program_title ?? "Программа"
+            const groupName = e.group_name ?? e.group?.name ?? "Группа"
             return (
-              <EnrollmentTrajectory
+              <ProgramTrajectory
                 key={e.id}
-                enrollment={e}
-                programTitle={title}
+                programId={programId}
+                programTitle={programTitle}
+                groupName={groupName}
+                progresses={progresses}
               />
             )
           })}
