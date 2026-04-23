@@ -534,7 +534,7 @@ function AdmissionRequestsPage() {
   const canManage = user?.is_superuser || role === "admin" || role === "teacher"
 
   const managers = (usersData?.data ?? []).filter(
-    (u) => u.is_superuser || u.role === "admin" || u.role === "teacher",
+    (u) => u.is_superuser || u.role === "ADMIN" || u.role === "TEACHER",
   )
 
   if (isError) return <p className="text-destructive">Ошибка загрузки заявок</p>

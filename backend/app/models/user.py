@@ -75,6 +75,13 @@ class User(UserBase, table=True):
     achievements: list["UserAchievement"] = Relationship(  # type: ignore
         back_populates="user"
     )
+    received_recommendations: list["TeacherRecommendation"] = Relationship(
+        back_populates="student",
+        sa_relationship_kwargs={
+            "primaryjoin": "User.id==foreign(TeacherRecommendation.student_id)",
+            "foreign_keys": "TeacherRecommendation.student_id"
+        }
+    )
 
 
 # Properties to return via API, id is always required

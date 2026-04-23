@@ -17,7 +17,8 @@ import type {
   ProgramCreate,
   ProgramsResponse,
   StudentProgramProgress,
-  Trajectory,
+  TeacherRecommendation,
+  TeacherRecommendationCreate,
   UserAchievementsResponse,
   UserPoints,
 } from "./custom-types"
@@ -109,6 +110,18 @@ export async function createGroup(body: {
   return data
 }
 
+export async function updateGroup(id: string, body: {
+  name?: string
+  program_id?: string
+  teacher_id?: string
+  status?: string
+  start_date?: string
+  end_date?: string
+}) {
+  const { data } = await api.patch(`/groups/${id}`, body)
+  return data
+}
+
 // ─── Enrollments ──────────────────────────────────────────────────────────────
 
 export async function getEnrollments(studentId?: string, groupId?: string): Promise<EnrollmentsResponse> {
@@ -172,16 +185,7 @@ export async function getGroupProgress(groupId: string): Promise<GroupProgress> 
 }
 
 // ─── Trajectory ───────────────────────────────────────────────────────────────
-
-export async function getStudentTrajectory(
-  programId: string,
-  studentId: string,
-): Promise<Trajectory> {
-  const { data } = await api.get<Trajectory>(
-    `/trajectory/programs/${programId}/students/${studentId}`,
-  )
-  return data
-}
+// Trajectory data is fetched via teacher recommendations and other APIs
 
 // ─── Gamification ─────────────────────────────────────────────────────────────
 
@@ -329,4 +333,29 @@ export async function deleteGroup(id: string): Promise<void> {
 
 export async function deleteEnrollment(id: string): Promise<void> {
   await api.delete(`/enrollments/${id}`)
+}
+
+// ─── Teacher Recommendations ──────────────────────────────────────────────────
+
+export async function getStudentRecommendations(
+  studentId: string,
+): Promise<TeacherRecommendation[]> {
+  const { data } = await api.get<TeacherRecommendation[]>(
+    `/teacher-recommendations/student/${studentId}`,
+  )
+  return data
+}
+
+export async function createRecommendation(
+  body: TeacherRecommendationCreate,
+): Promise<TeacherRecommendation> {
+  const { data } = await api.post<TeacherRecommendation>(
+    "/teacher-recommendations/",
+    body,
+  )
+  return data
+}
+
+export async function deleteRecommendation(id: string): Promise<void> {
+  await api.delete(`/teacher-recommendations/${id}`)
 }

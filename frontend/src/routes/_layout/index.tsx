@@ -63,7 +63,7 @@ function KpiCard({
   icon: Icon,
   label,
   value,
-  color = "text-blue-600",
+  color = "text-primary",
 }: {
   icon: ElementType
   label: string
@@ -71,14 +71,14 @@ function KpiCard({
   color?: string
 }) {
   return (
-    <Card>
+    <Card className="group hover:shadow-lg transition-all duration-200">
       <CardContent className="flex items-center gap-4 pt-6">
-        <div className={`rounded-full p-3 bg-gray-100 ${color}`}>
-          <Icon className="h-5 w-5" />
+        <div className={`rounded-xl p-3 bg-secondary/50 ${color} group-hover:scale-110 transition-transform duration-200`}>
+          <Icon className="h-6 w-6" />
         </div>
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold">{value}</p>
+        <div className="flex-1">
+          <p className="text-sm text-muted-foreground font-medium">{label}</p>
+          <p className="text-3xl font-bold text-foreground">{value}</p>
         </div>
       </CardContent>
     </Card>
@@ -178,10 +178,10 @@ function AdminDashboard({ userId: _userId }: { userId: string }) {
   const recentRequests = allRequests.slice(0, 5)
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-full gap-6 p-6 md:p-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight uppercase">Дашборд</h1>
-        <p className="text-muted-foreground">Обзор образовательного процесса</p>
+        <h1 className="text-3xl font-bold text-foreground">Дашборд</h1>
+        <p className="text-muted-foreground mt-2">Обзор образовательного процесса</p>
       </div>
 
       {/* KPI Cards */}
@@ -345,10 +345,10 @@ function TeacherDashboard({ userId }: { userId: string }) {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-full gap-6 p-6 md:p-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight uppercase">Дашборд</h1>
-        <p className="text-muted-foreground">Управление группами</p>
+        <h1 className="text-3xl font-bold text-foreground">Дашборд</h1>
+        <p className="text-muted-foreground mt-2">Управление группами и прогресс студентов</p>
       </div>
 
       {/* KPI */}
@@ -637,10 +637,10 @@ function StudentDashboard({ userId }: { userId: string }) {
     .slice(0, 5)
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-full gap-6 p-6 md:p-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight uppercase">Дашборд</h1>
-        <p className="text-muted-foreground">Мой прогресс обучения</p>
+        <h1 className="text-3xl font-bold text-foreground">Дашборд</h1>
+        <p className="text-muted-foreground mt-2">Мой прогресс обучения и достижения</p>
       </div>
 
       {/* KPI */}

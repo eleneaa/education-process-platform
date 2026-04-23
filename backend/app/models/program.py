@@ -22,6 +22,7 @@ class ProgramUpdate(SQLModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=255)
     status: ProgramStatus | None = None
+    recommended_next_program_id: uuid.UUID | None = None
 
 
 class ProgramPublic(ProgramBase):
@@ -30,6 +31,7 @@ class ProgramPublic(ProgramBase):
     updated_at: datetime | None = None
     status: ProgramStatus = Field(default=ProgramStatus.DRAFT)
     created_by_id: uuid.UUID | None = None
+    recommended_next_program_id: uuid.UUID | None = None
 
 
 class ProgramsPublic(SQLModel):
@@ -47,6 +49,12 @@ class Program (ProgramBase, table=True):
     created_by_id: uuid.UUID | None = Field(
         default=None,
         foreign_key="user.id",
+        nullable=True,
+        ondelete="SET NULL",
+    )
+    recommended_next_program_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="program.id",
         nullable=True,
         ondelete="SET NULL",
     )

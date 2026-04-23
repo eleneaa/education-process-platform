@@ -18,6 +18,7 @@ class GroupBase(SQLModel):
 class GroupCreate(GroupBase):
     program_id: uuid.UUID
     teacher_id: uuid.UUID | None = None
+    status: GroupStatus | None = None
     start_date: datetime | None = None
     end_date: datetime | None = None
 

@@ -1,30 +1,38 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Plus, Trash2, Users } from "lucide-react"
+import {
+  Users,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  BookOpen,
+  Grid,
+  List as ListIcon,
+  UserPlus,
+  UserMinus,
+  MessageSquare,
+} from "lucide-react"
 import { useState } from "react"
 
 import {
-  createEnrollment,
   createGroup,
-  deleteEnrollment,
+  createEnrollment,
   deleteGroup,
-  getEnrollments,
+  deleteEnrollment,
   getGroups,
+  getEnrollments,
   getPrograms,
   getUsers,
+  updateGroup,
+  createRecommendation,
 } from "@/client/custom-api"
-import type { Enrollment, Group } from "@/client/custom-types"
+import type { Group, Enrollment, Program } from "@/client/custom-types"
 import type { UserPublic } from "@/client/types.gen"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -34,16 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
-import useAuth from "@/hooks/useAuth"
+import { RightPanel } from "@/components/RightPanel"
 import useCustomToast from "@/hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/groups")({
@@ -53,81 +52,35 @@ export const Route = createFileRoute("/_layout/groups")({
   }),
 })
 
-function statusLabel(status?: string | null): string {
-  const map: Record<string, string> = {
-    planned: "Запланирована",
-    active: "Активна",
-    finished: "Завершена",
-    canceled: "Отменена",
-  }
-  return map[status ?? ""] ?? (status ?? "—")
-}
+// ─── Group Form ──────────────────────────────────────────────────────────────
 
-function statusVariant(
-  status?: string | null,
-): "default" | "secondary" | "outline" | "destructive" {
-  if (status === "active") return "default"
-  if (status === "finished") return "outline"
-  if (status === "canceled") return "destructive"
-  return "secondary"
-}
-
-// ─── Create Group Dialog ──────────────────────────────────────────────────────
-
-function CreateGroupDialog({
-  open,
-  onOpenChange,
+function GroupForm({
+  group,
+  programs,
+  teachers,
+  onSubmit,
+  onCancel,
+  isLoading,
 }: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  group?: Group
+  programs: Program[]
+  teachers: UserPublic[]
+  onSubmit: (data: any) => void
+  onCancel: () => void
+  isLoading: boolean
 }) {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const isEdit = !!group
+  const [name, setName] = useState(group?.name ?? "")
+  const [programId, setProgramId] = useState(group?.program_id ?? "")
+  const [teacherId, setTeacherId] = useState(group?.teacher_id ?? "")
+  const [status, setStatus] = useState(group?.status ?? "active")
+  const [startDate, setStartDate] = useState(group?.start_date ?? "")
+  const [endDate, setEndDate] = useState(group?.end_date ?? "")
 
-  const [name, setName] = useState("")
-  const [programId, setProgramId] = useState("")
-  const [teacherId, setTeacherId] = useState("")
-  const [status, setStatus] = useState("planned")
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
-
-  const { data: programs } = useQuery({
-    queryKey: ["programs"],
-    queryFn: getPrograms,
-    placeholderData: { data: [], count: 0 },
-  })
-  const { data: users } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => getUsers(),
-    placeholderData: { data: [] as UserPublic[], count: 0 },
-  })
-
-  const teachers = (users?.data ?? []).filter(
-    (u) => u.is_superuser || u.role === "admin" || u.role === "teacher",
-  )
-
-  const mutation = useMutation({
-    mutationFn: createGroup,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["groups"] })
-      showSuccessToast("Группа создана")
-      onOpenChange(false)
-      setName("")
-      setProgramId("")
-      setTeacherId("")
-      setStatus("planned")
-      setStartDate("")
-      setEndDate("")
-    },
-    onError: () => {
-      showErrorToast("Не удалось создать группу")
-    },
-  })
-
-  function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !programId) return
-    mutation.mutate({
+    onSubmit({
       name: name.trim(),
       program_id: programId,
       teacher_id: teacherId || undefined,
@@ -138,420 +91,776 @@ function CreateGroupDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Создать группу</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="grp-name">Название *</Label>
-            <Input
-              id="grp-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Название группы"
-              required
-            />
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <Label htmlFor="group-name" className="text-base font-semibold">
+          Название группы
+        </Label>
+        <Input
+          id="group-name"
+          placeholder="Введите название группы"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="mt-2"
+          disabled={isLoading}
+        />
+      </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="grp-program">Программа *</Label>
-            <Select value={programId} onValueChange={setProgramId} required>
-              <SelectTrigger id="grp-program">
-                <SelectValue placeholder="Выберите программу" />
-              </SelectTrigger>
-              <SelectContent>
-                {(programs?.data ?? []).map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <div>
+        <Label htmlFor="program" className="text-base font-semibold">
+          Программа обучения
+        </Label>
+        {programs.length > 0 ? (
+          <Select value={programId} onValueChange={setProgramId} disabled={isLoading}>
+            <SelectTrigger id="program" className="mt-2">
+              <SelectValue placeholder="Выберите программу" />
+            </SelectTrigger>
+            <SelectContent>
+              {programs.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="mt-2 p-2 text-sm text-destructive bg-destructive/10 rounded-md">
+            Нет доступных программ обучения
           </div>
+        )}
+      </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="grp-teacher">Преподаватель</Label>
-            <Select value={teacherId} onValueChange={setTeacherId}>
-              <SelectTrigger id="grp-teacher">
-                <SelectValue placeholder="Выберите преподавателя" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_none">— Не назначен —</SelectItem>
-                {teachers.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.full_name || t.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <div>
+        <Label htmlFor="teacher" className="text-base font-semibold">
+          Преподаватель
+        </Label>
+        <Select value={teacherId} onValueChange={setTeacherId} disabled={isLoading || teachers.length === 0}>
+          <SelectTrigger id="teacher" className="mt-2">
+            <SelectValue placeholder={teachers.length > 0 ? "Выберите преподавателя (опционально)" : "Нет доступных преподавателей"} />
+          </SelectTrigger>
+          <SelectContent>
+            {teachers.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                {t.full_name || t.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="grp-status">Статус</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger id="grp-status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="planned">Запланирована</SelectItem>
-                <SelectItem value="active">Активна</SelectItem>
-                <SelectItem value="finished">Завершена</SelectItem>
-                <SelectItem value="canceled">Отменена</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="start-date" className="text-base font-semibold">
+            Начало
+          </Label>
+          <Input
+            id="start-date"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="mt-2"
+            disabled={isLoading}
+          />
+        </div>
+        <div>
+          <Label htmlFor="end-date" className="text-base font-semibold">
+            Конец
+          </Label>
+          <Input
+            id="end-date"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="mt-2"
+            disabled={isLoading}
+          />
+        </div>
+      </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="grp-start">Дата начала</Label>
-              <Input
-                id="grp-start"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="grp-end">Дата окончания</Label>
-              <Input
-                id="grp-end"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-          </div>
+      <div>
+        <Label htmlFor="status" className="text-base font-semibold">
+          Статус
+        </Label>
+        <Select value={status} onValueChange={setStatus} disabled={isLoading}>
+          <SelectTrigger id="status" className="mt-2">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Активна</SelectItem>
+            <SelectItem value="completed">Завершена</SelectItem>
+            <SelectItem value="archived">Архивирована</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Отмена
-            </Button>
-            <Button type="submit" disabled={mutation.isPending || !programId}>
-              {mutation.isPending ? "Создание..." : "Создать"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <div className="flex gap-3 pt-4 border-t border-border">
+        <Button
+          type="submit"
+          disabled={isLoading || !name.trim() || !programId}
+          className="flex-1"
+        >
+          {isLoading ? "Сохранение..." : isEdit ? "Сохранить" : "Создать"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isLoading}
+          className="flex-1"
+        >
+          Отмена
+        </Button>
+      </div>
+    </form>
   )
 }
 
-// ─── Manage Students Dialog ───────────────────────────────────────────────────
+// ─── Add Student Form ─────────────────────────────────────────────────────────
 
-function EnrollmentRow({
-  enrollment,
-  onDeleted,
+function AddStudentForm({
+  students,
+  enrolledStudentIds,
+  onSubmit,
+  onCancel,
+  isLoading,
 }: {
-  enrollment: Enrollment
-  onDeleted: () => void
+  students: UserPublic[]
+  enrolledStudentIds: Set<string>
+  onSubmit: (studentId: string) => void
+  onCancel: () => void
+  isLoading: boolean
 }) {
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [selectedStudentId, setSelectedStudentId] = useState("")
 
-  const mutation = useMutation({
-    mutationFn: () => deleteEnrollment(enrollment.id),
-    onSuccess: () => { showSuccessToast("Студент удалён из группы"); onDeleted() },
-    onError: () => showErrorToast("Не удалось удалить"),
-  })
+  const availableStudents = students.filter((s) => !enrolledStudentIds.has(s.id))
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedStudentId) return
+    onSubmit(selectedStudentId)
+    setSelectedStudentId("")
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="student" className="text-base font-semibold">
+          Выберите студента
+        </Label>
+        <Select value={selectedStudentId} onValueChange={setSelectedStudentId} disabled={isLoading}>
+          <SelectTrigger id="student" className="mt-2">
+            <SelectValue placeholder="Доступные студенты" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableStudents.length > 0 ? (
+              availableStudents.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.full_name || s.email}
+                </SelectItem>
+              ))
+            ) : (
+              <div className="p-2 text-sm text-muted-foreground">Нет доступных студентов</div>
+            )}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex gap-3 pt-4 border-t border-border">
+        <Button
+          type="submit"
+          disabled={isLoading || !selectedStudentId}
+          className="flex-1 gap-2"
+        >
+          <UserPlus className="h-4 w-4" />
+          Добавить
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isLoading}
+          className="flex-1"
+        >
+          Отмена
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+// ─── Group Card ──────────────────────────────────────────────────────────────
+
+interface GroupCardProps {
+  group: Group
+  studentCount: number
+  programTitle?: string
+  onEdit: (group: Group) => void
+  onDelete: (group: Group) => void
+  onManageStudents: (group: Group) => void
+}
+
+function GroupCard({
+  group,
+  studentCount,
+  programTitle,
+  onEdit,
+  onDelete,
+  onManageStudents,
+}: GroupCardProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+
+  const statusColor: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+    active: "default",
+    completed: "secondary",
+    archived: "outline",
+  }
+
+  const statusLabel = {
+    active: "Активна",
+    completed: "Завершена",
+    archived: "Архивирована",
+  }
 
   return (
     <>
+      <Card className="group hover:shadow-lg transition-all duration-200">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors truncate">
+                {group.name}
+              </h3>
+              {programTitle && (
+                <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  {programTitle}
+                </p>
+              )}
+              {group.teacher_name && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Преподаватель: {group.teacher_name}
+                </p>
+              )}
+            </div>
+            <Users className="h-6 w-6 text-primary/40 shrink-0" />
+          </div>
+
+          <div className="flex items-center gap-2 mb-4">
+            <Badge variant={statusColor[group.status || "active"] as any}>
+              {statusLabel[group.status as keyof typeof statusLabel] || group.status}
+            </Badge>
+            <Badge variant="outline">
+              <Users className="h-3 w-3 mr-1" />
+              {studentCount} студентов
+            </Badge>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onManageStudents(group)}
+              className="flex-1 text-xs"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Студенты
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onEdit(group)}
+              className="flex-1 text-xs"
+            >
+              <Pencil className="h-4 w-4 mr-2" />
+              Редактировать
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              className="text-destructive hover:bg-destructive/10 flex-1 text-xs"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Удалить
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <ConfirmDeleteDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Удалить студента из группы?"
-        description={`${enrollment.student_name ?? enrollment.student_email ?? "Студент"} будет отчислен из группы.`}
-        onConfirm={() => mutation.mutate()}
-        isPending={mutation.isPending}
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={() => onDelete(group)}
+        title="Удалить группу?"
+        description={`Вы уверены, что хотите удалить группу "${group.name}"? Это действие необратимо.`}
       />
-      <div className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
-        <Users className="h-4 w-4 text-muted-foreground shrink-0" />
-        <div className="min-w-0 flex-1">
-          <p className="font-medium truncate">{enrollment.student_name ?? enrollment.student_email ?? enrollment.student_id}</p>
-          {enrollment.student_name && enrollment.student_email && (
-            <p className="text-xs text-muted-foreground truncate">{enrollment.student_email}</p>
-          )}
-        </div>
-        <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive shrink-0" onClick={() => setConfirmOpen(true)}>
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
-      </div>
     </>
   )
 }
 
-function ManageStudentsDialog({
-  open,
-  onOpenChange,
-  group,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  group: Group
-}) {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [selectedUserId, setSelectedUserId] = useState("")
-
-  const { data: enrollmentsData } = useQuery({
-    queryKey: ["enrollments", "group", group.id],
-    queryFn: () => getEnrollments(undefined, group.id),
-    enabled: open,
-    placeholderData: { data: [], count: 0 },
-  })
-
-  const { data: usersData } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => getUsers(),
-    placeholderData: { data: [] as UserPublic[], count: 0 },
-  })
-
-  const enrolledIds = new Set((enrollmentsData?.data ?? []).map((e) => e.student_id))
-  const availableStudents = (usersData?.data ?? []).filter(
-    (u) => !enrolledIds.has(u.id) && (u.role === "student" || (!u.is_superuser && u.role !== "admin" && u.role !== "teacher")),
-  )
-
-  const mutation = useMutation({
-    mutationFn: (studentId: string) =>
-      createEnrollment({ student_id: studentId, group_id: group.id }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["enrollments", "group", group.id] })
-      queryClient.invalidateQueries({ queryKey: ["groups"] })
-      showSuccessToast("Студент добавлен в группу")
-      setSelectedUserId("")
-    },
-    onError: () => {
-      showErrorToast("Не удалось добавить студента")
-    },
-  })
-
-  const enrollments = enrollmentsData?.data ?? []
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Студенты — {group.name}</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Enrolled students list */}
-          <div className="space-y-2 max-h-52 overflow-y-auto">
-            {enrollments.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                В группе пока нет студентов
-              </p>
-            ) : (
-              enrollments.map((e) => (
-                <EnrollmentRow
-                  key={e.id}
-                  enrollment={e}
-                  onDeleted={() => {
-                    queryClient.invalidateQueries({ queryKey: ["enrollments", "group", group.id] })
-                    queryClient.invalidateQueries({ queryKey: ["groups"] })
-                  }}
-                />
-              ))
-            )}
-          </div>
-
-          {/* Add student */}
-          <div className="border-t pt-4 space-y-3">
-            <p className="text-sm font-medium">Добавить студента</p>
-            <div className="flex gap-2">
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Выберите студента" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableStudents.length === 0 ? (
-                    <SelectItem value="_empty" disabled>
-                      Все студенты уже в группе
-                    </SelectItem>
-                  ) : (
-                    availableStudents.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.full_name || u.email}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={() => selectedUserId && mutation.mutate(selectedUserId)}
-                disabled={!selectedUserId || mutation.isPending}
-              >
-                Добавить
-              </Button>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Закрыть
-            </Button>
-          </DialogFooter>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 function GroupsPage() {
-  const { user } = useAuth()
-  const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [createOpen, setCreateOpen] = useState(false)
-  const [studentsGroup, setStudentsGroup] = useState<Group | null>(null)
-  const [deleteGroup_, setDeleteGroup] = useState<Group | null>(null)
+  const queryClient = useQueryClient()
+  const [searchQuery, setSearchQuery] = useState("")
+  const [view, setView] = useState<"grid" | "list">("grid")
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteGroup(id),
+  // Group form state
+  const [groupFormOpen, setGroupFormOpen] = useState(false)
+  const [editingGroup, setEditingGroup] = useState<Group | undefined>()
+
+  // Student management state
+  const [managingGroup, setManagingGroup] = useState<Group | undefined>()
+  const [addStudentOpen, setAddStudentOpen] = useState(false)
+  const [recommendationOpen, setRecommendationOpen] = useState(false)
+  const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | undefined>()
+
+  // Queries
+  const { data: groups = [] } = useQuery({
+    queryKey: ["groups"],
+    queryFn: () => getGroups(),
+    select: (data) => data.data ?? [],
+  })
+
+  const { data: enrollments = [] } = useQuery({
+    queryKey: ["enrollments"],
+    queryFn: () => getEnrollments(),
+    select: (data) => data.data ?? [],
+  })
+
+  const { data: programs = [] } = useQuery({
+    queryKey: ["programs"],
+    queryFn: () => getPrograms(),
+    select: (data) => data.data ?? [],
+  })
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => getUsers(),
+    select: (data) => data.data ?? [],
+  })
+
+  // Mutations
+  const createGroupMutation = useMutation({
+    mutationFn: createGroup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["groups"] })
+      showSuccessToast("Группа создана")
+      setGroupFormOpen(false)
+    },
+    onError: () => showErrorToast("Ошибка при создании группы"),
+  })
+
+  const updateGroupMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => updateGroup(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["groups"] })
+      showSuccessToast("Группа обновлена")
+      setGroupFormOpen(false)
+      setEditingGroup(undefined)
+    },
+    onError: () => showErrorToast("Ошибка при обновлении группы"),
+  })
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: deleteGroup,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["groups"] })
       showSuccessToast("Группа удалена")
-      setDeleteGroup(null)
     },
-    onError: () => showErrorToast("Не удалось удалить группу"),
+    onError: () => showErrorToast("Ошибка при удалении группы"),
   })
 
-  const { data: groups, isError } = useQuery({
-    queryKey: ["groups"],
-    queryFn: getGroups,
-    placeholderData: { data: [], count: 0 },
+  const createEnrollmentMutation = useMutation({
+    mutationFn: createEnrollment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] })
+      showSuccessToast("Студент добавлен")
+      setAddStudentOpen(false)
+    },
+    onError: () => showErrorToast("Ошибка при добавлении студента"),
   })
-  const { data: programs } = useQuery({
-    queryKey: ["programs"],
-    queryFn: getPrograms,
-    placeholderData: { data: [], count: 0 },
+
+  const deleteEnrollmentMutation = useMutation({
+    mutationFn: deleteEnrollment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] })
+      showSuccessToast("Студент удален")
+    },
+    onError: () => showErrorToast("Ошибка при удалении студента"),
   })
 
-  const role = (user?.role ?? "student").toLowerCase()
-  const canManage =
-    user?.is_superuser || role === "admin" || role === "teacher"
+  const recommendMutation = useMutation({
+    mutationFn: (data: any) => createRecommendation(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teacher-recommendations"] })
+      showSuccessToast("Рекомендация отправлена")
+      setRecommendationOpen(false)
+    },
+    onError: () => showErrorToast("Ошибка при отправке рекомендации"),
+  })
 
-  const programMap = Object.fromEntries(
-    (programs?.data ?? []).map((p) => [p.id, p.title]),
-  )
-
-  if (isError) {
-    return <p className="text-destructive">Ошибка загрузки групп</p>
+  const handleCreateGroup = () => {
+    setEditingGroup(undefined)
+    setGroupFormOpen(true)
   }
 
-  const groupList = groups?.data ?? []
+  const handleEditGroup = (group: Group) => {
+    setEditingGroup(group)
+    setGroupFormOpen(true)
+  }
+
+  const handleSubmitGroupForm = (data: any) => {
+    if (editingGroup) {
+      updateGroupMutation.mutate({ id: editingGroup.id, data })
+    } else {
+      createGroupMutation.mutate(data)
+    }
+  }
+
+  const handleManageStudents = (group: Group) => {
+    setManagingGroup(group)
+  }
+
+  const handleAddStudent = (studentId: string) => {
+    if (!managingGroup) return
+    createEnrollmentMutation.mutate({
+      student_id: studentId,
+      group_id: managingGroup.id,
+    })
+  }
+
+  const filteredGroups = groups.filter((g) =>
+    g.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const getGroupStudents = (groupId: string) =>
+    enrollments.filter((e) => e.group_id === groupId)
+
+  const getProgramTitle = (programId: string) =>
+    programs.find((p) => p.id === programId)?.title
+
+  const getStudent = (studentId: string) =>
+    users.find((u) => u.id === studentId)
+
+  const teachers = users.filter((u) => u.role === "TEACHER")
+
+  const groupEnrollmentIds = managingGroup
+    ? new Set(getGroupStudents(managingGroup.id).map((e) => e.student_id))
+    : new Set<string>()
 
   return (
-    <div className="space-y-6">
-      <CreateGroupDialog open={createOpen} onOpenChange={setCreateOpen} />
-      <ConfirmDeleteDialog
-        open={!!deleteGroup_}
-        onOpenChange={(o) => !o && setDeleteGroup(null)}
-        title="Удалить группу?"
-        description={`Группа «${deleteGroup_?.name}» и все зачисления будут удалены безвозвратно.`}
-        onConfirm={() => deleteGroup_ && deleteMutation.mutate(deleteGroup_.id)}
-        isPending={deleteMutation.isPending}
-      />
-      {studentsGroup && (
-        <ManageStudentsDialog
-          open={!!studentsGroup}
-          onOpenChange={(o) => !o && setStudentsGroup(null)}
-          group={studentsGroup}
-        />
-      )}
-
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full gap-6 p-6 md:p-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight uppercase">Группы</h1>
-          <p className="text-muted-foreground">Учебные группы</p>
+          <h1 className="text-3xl font-bold text-foreground">Группы обучения</h1>
+          <p className="text-muted-foreground mt-2">
+            Всего групп: {filteredGroups.length}
+          </p>
         </div>
-        {canManage && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Создать группу
+        <Button
+          onClick={handleCreateGroup}
+          size="lg"
+          className="gap-2"
+        >
+          <Plus className="h-5 w-5" />
+          Создать группу
+        </Button>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Поиск групп..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            variant={view === "grid" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setView("grid")}
+          >
+            <Grid className="h-4 w-4" />
           </Button>
+          <Button
+            variant={view === "list" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setView("list")}
+          >
+            <ListIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Groups Grid/List */}
+      <div
+        className={
+          view === "grid"
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max"
+            : "space-y-3"
+        }
+      >
+        {filteredGroups.length > 0 ? (
+          filteredGroups.map((group) => (
+            <GroupCard
+              key={group.id}
+              group={group}
+              studentCount={getGroupStudents(group.id).length}
+              programTitle={getProgramTitle(group.program_id)}
+              onEdit={handleEditGroup}
+              onDelete={(g) => deleteGroupMutation.mutate(g.id)}
+              onManageStudents={handleManageStudents}
+            />
+          ))
+        ) : (
+          <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+            <Users className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+            <h3 className="font-semibold text-foreground">Нет групп</h3>
+            <p className="text-muted-foreground text-sm mt-2">
+              Создайте первую группу обучения
+            </p>
+          </div>
         )}
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Название</TableHead>
-                <TableHead>Программа</TableHead>
-                <TableHead>Преподаватель</TableHead>
-                <TableHead>Студентов</TableHead>
-                <TableHead>Статус</TableHead>
-                <TableHead>Дата начала</TableHead>
-                <TableHead>Дата окончания</TableHead>
-                {canManage && <TableHead />}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {groupList.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={canManage ? 8 : 7}
-                    className="text-center py-8 text-muted-foreground"
-                  >
-                    Групп пока нет
-                  </TableCell>
-                </TableRow>
-              ) : (
-                groupList.map((g) => (
-                  <TableRow key={g.id}>
-                    <TableCell className="font-medium">{g.name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {programMap[g.program_id] ?? g.program_id}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {g.teacher_name ?? g.teacher_id ?? "—"}
-                    </TableCell>
-                    <TableCell>{g.student_count ?? 0}</TableCell>
-                    <TableCell>
-                      <Badge variant={statusVariant(g.status)}>
-                        {statusLabel(g.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {g.start_date
-                        ? new Date(g.start_date).toLocaleDateString("ru-RU")
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {g.end_date
-                        ? new Date(g.end_date).toLocaleDateString("ru-RU")
-                        : "—"}
-                    </TableCell>
-                    {canManage && (
-                      <TableCell>
-                        <div className="flex gap-1.5">
-                          <Button size="sm" variant="outline" onClick={() => setStudentsGroup(g)}>
-                            <Users className="h-3.5 w-3.5 mr-1" />
-                            Студенты
+      {/* Group Form Panel */}
+      <RightPanel
+        isOpen={groupFormOpen}
+        onClose={() => {
+          setGroupFormOpen(false)
+          setEditingGroup(undefined)
+        }}
+        title={editingGroup ? "Редактировать группу" : "Создать группу"}
+        description={editingGroup ? "Измените данные группы" : "Добавьте новую группу обучения"}
+      >
+        <GroupForm
+          group={editingGroup}
+          programs={programs}
+          teachers={teachers}
+          onSubmit={handleSubmitGroupForm}
+          onCancel={() => {
+            setGroupFormOpen(false)
+            setEditingGroup(undefined)
+          }}
+          isLoading={createGroupMutation.isPending || updateGroupMutation.isPending}
+        />
+      </RightPanel>
+
+      {/* Students Management Panel */}
+      <RightPanel
+        isOpen={!!managingGroup}
+        onClose={() => {
+          setManagingGroup(undefined)
+          setAddStudentOpen(false)
+          setSelectedEnrollment(undefined)
+          setRecommendationOpen(false)
+        }}
+        title={managingGroup?.name || ""}
+        description="Управление студентами"
+        width="lg"
+      >
+        {managingGroup && (
+          <div className="space-y-4">
+            <Button
+              onClick={() => setAddStudentOpen(true)}
+              className="w-full gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Добавить студента
+            </Button>
+
+            <div className="space-y-3">
+              {getGroupStudents(managingGroup.id).length > 0 ? (
+                getGroupStudents(managingGroup.id).map((enrollment) => (
+                  <Card key={enrollment.id} className="overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-foreground">
+                            {getStudent(enrollment.student_id)?.full_name ||
+                              getStudent(enrollment.student_id)?.email}
+                          </h4>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {getStudent(enrollment.student_id)?.email}
+                          </p>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setSelectedEnrollment(enrollment)
+                              setRecommendationOpen(true)
+                            }}
+                            title="Отправить рекомендацию"
+                          >
+                            <MessageSquare className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setDeleteGroup(g)}
+                            variant="ghost"
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => deleteEnrollmentMutation.mutate(enrollment.id)}
+                            title="Удалить студента"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <UserMinus className="h-4 w-4" />
                           </Button>
                         </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
+                  <p className="text-sm text-muted-foreground">Нет студентов</p>
+                </div>
               )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </div>
+          </div>
+        )}
+      </RightPanel>
+
+      {/* Add Student Panel */}
+      <RightPanel
+        isOpen={addStudentOpen && !!managingGroup}
+        onClose={() => setAddStudentOpen(false)}
+        title="Добавить студента"
+        description={managingGroup?.name}
+        width="md"
+      >
+        {managingGroup && (
+          <AddStudentForm
+            students={users.filter((u) => u.role === "STUDENT")}
+            enrolledStudentIds={groupEnrollmentIds}
+            onSubmit={handleAddStudent}
+            onCancel={() => setAddStudentOpen(false)}
+            isLoading={createEnrollmentMutation.isPending}
+          />
+        )}
+      </RightPanel>
+
+      {/* Recommendation Panel */}
+      <RightPanel
+        isOpen={recommendationOpen && !!selectedEnrollment && !!managingGroup}
+        onClose={() => {
+          setRecommendationOpen(false)
+          setSelectedEnrollment(undefined)
+        }}
+        title="Отправить рекомендацию"
+        description={getStudent(selectedEnrollment?.student_id || "")?.full_name || undefined}
+        width="md"
+      >
+        {selectedEnrollment && managingGroup && (
+          <RecommendationForm
+            programs={programs}
+            onSubmit={(programId) => {
+              recommendMutation.mutate({
+                student_id: selectedEnrollment.student_id,
+                program_id: programId,
+              })
+            }}
+            onCancel={() => {
+              setRecommendationOpen(false)
+              setSelectedEnrollment(undefined)
+            }}
+            isLoading={recommendMutation.isPending}
+          />
+        )}
+      </RightPanel>
     </div>
+  )
+}
+
+// ─── Recommendation Form ──────────────────────────────────────────────────────
+
+function RecommendationForm({
+  programs,
+  onSubmit,
+  onCancel,
+  isLoading,
+}: {
+  programs: Program[]
+  onSubmit: (programId: string) => void
+  onCancel: () => void
+  isLoading: boolean
+}) {
+  const [selectedProgramId, setSelectedProgramId] = useState("")
+  const [comment, setComment] = useState("")
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedProgramId) return
+    onSubmit(selectedProgramId)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <Label htmlFor="program" className="text-base font-semibold">
+          Выберите программу
+        </Label>
+        <Select value={selectedProgramId} onValueChange={setSelectedProgramId} disabled={isLoading}>
+          <SelectTrigger id="program" className="mt-2">
+            <SelectValue placeholder="Программы" />
+          </SelectTrigger>
+          <SelectContent>
+            {programs.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="comment" className="text-base font-semibold">
+          Комментарий (опционально)
+        </Label>
+        <textarea
+          id="comment"
+          placeholder="Добавьте комментарий для студента"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          disabled={isLoading}
+          className="
+            mt-2 w-full px-3 py-2 rounded-lg border border-input
+            bg-background text-foreground placeholder-muted-foreground
+            focus:outline-none focus:ring-2 focus:ring-primary
+            disabled:opacity-50 disabled:cursor-not-allowed
+            min-h-20 resize-none
+          "
+        />
+      </div>
+
+      <div className="flex gap-3 pt-4 border-t border-border">
+        <Button
+          type="submit"
+          disabled={isLoading || !selectedProgramId}
+          className="flex-1 gap-2"
+        >
+          <MessageSquare className="h-4 w-4" />
+          Отправить
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isLoading}
+          className="flex-1"
+        >
+          Отмена
+        </Button>
+      </div>
+    </form>
   )
 }

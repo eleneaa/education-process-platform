@@ -14,6 +14,7 @@ from app.api.routes import (
     analytics,
     trajectory,
     lessons,
+    teacher_recommendations,
 )
 
 
@@ -31,6 +32,7 @@ api_router.include_router(gamification.router)
 api_router.include_router(analytics.router)
 api_router.include_router(trajectory.router)
 api_router.include_router(lessons.router)
+api_router.include_router(teacher_recommendations.router)
 
 
 if settings.ENVIRONMENT == "local":

@@ -169,21 +169,48 @@ export type GroupProgress = {
   students: GroupStudentProgress[]
 }
 
-// ─── Trajectory ───────────────────────────────────────────────────────────────
+// ─── Teacher Recommendations ──────────────────────────────────────────────────
 
-export type TrajectoryRecommendation = {
-  module_id: string
-  title: string
-  position: number
-  action: "Начать" | "Продолжить" | "Повторить" | string
+export type TeacherRecommendation = {
+  id: string
+  student_id: string
+  teacher_id: string
+  program_id: string
+  comment?: string | null
+  created_at?: string | null
+  program_title?: string | null
+  program_description?: string | null
+  teacher_name?: string | null
 }
 
-export type Trajectory = {
-  status: "not_started" | "in_progress" | "completed" | string
-  percentage: number
-  recommendations: TrajectoryRecommendation[]
-  program_id?: string
-  student_id?: string
+export type TeacherRecommendationCreate = {
+  student_id: string
+  program_id: string
+  comment?: string | null
+}
+
+// ─── Trajectory ───────────────────────────────────────────────────────────────
+
+export type NextStepModule = {
+  id: string
+  title: string
+  position: number
+  module_type: string
+}
+
+export type TrajectoryData = {
+  next_step?: NextStepModule | null
+  teacher_recommendations: TeacherRecommendation[]
+  program_recommendations: Array<{
+    program_id: string
+    program_title: string
+    after_program_id: string
+  }>
+  other_programs: Array<{
+    id: string
+    title: string
+    description?: string | null
+  }>
 }
 
 // ─── Gamification ─────────────────────────────────────────────────────────────

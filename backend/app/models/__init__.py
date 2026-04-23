@@ -49,6 +49,11 @@ from .program import (Program,
                       ProgramUpdate,
                       ProgramCreate)
 from .lesson import (Lesson, LessonCreate, LessonUpdate, LessonPublic, LessonsPublic)
+from .teacher_recommendation import (TeacherRecommendation,
+                                     TeacherRecommendationBase,
+                                     TeacherRecommendationCreate,
+                                     TeacherRecommendationUpdate,
+                                     TeacherRecommendationPublic)
 from .gamification import (Achievement,
                            AchievementBase,
                            AchievementCreate,
