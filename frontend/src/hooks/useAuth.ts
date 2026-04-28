@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
+import axios from "axios"
 
 import {
   type Body_login_login_access_token as AccessToken,
-  LoginService,
   type UserPublic,
   type UserRegister,
   UsersService,
+  OpenAPI,
 } from "@/client"
 import { handleError } from "@/utils"
 import useCustomToast from "./useCustomToast"
@@ -39,10 +40,21 @@ const useAuth = () => {
   })
 
   const login = async (data: AccessToken) => {
-    const response = await LoginService.loginAccessToken({
-      formData: data,
-    })
-    localStorage.setItem("access_token", response.access_token)
+    const params = new URLSearchParams()
+    params.append("username", data.username)
+    params.append("password", data.password)
+
+    const response = await axios.post(
+      `${OpenAPI.BASE}/api/v1/login/access-token`,
+      params,
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        withCredentials: true,
+      }
+    )
+    localStorage.setItem("access_token", response.data.access_token)
   }
 
   const loginMutation = useMutation({

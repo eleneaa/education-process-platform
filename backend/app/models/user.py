@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from pydantic import EmailStr
-from sqlalchemy import DateTime
+from sqlalchemy import BigInteger, Column, DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
 from .utils import get_datetime_utc
@@ -50,6 +50,10 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+    telegram_chat_id: int | None = Field(
+        default=None,
+        sa_column=Column(BigInteger, nullable=True, unique=True),
+    )
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore

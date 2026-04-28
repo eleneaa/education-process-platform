@@ -1,6 +1,6 @@
-import type { ElementType } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useState } from "react"
 import {
   Award,
   BookOpen,
@@ -11,8 +11,8 @@ import {
   Star,
   Trophy,
   Users,
+  Activity,
 } from "lucide-react"
-import { useState } from "react"
 import {
   Bar,
   BarChart,
@@ -48,6 +48,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { MetricCard } from "@/components/Dashboard"
 import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/")({
@@ -59,50 +60,24 @@ export const Route = createFileRoute("/_layout/")({
 
 // ─── Shared components ────────────────────────────────────────────────────────
 
-function KpiCard({
-  icon: Icon,
-  label,
-  value,
-  color = "text-primary",
-}: {
-  icon: ElementType
-  label: string
-  value: string | number
-  color?: string
-}) {
-  return (
-    <Card className="group hover:shadow-lg transition-all duration-200">
-      <CardContent className="flex items-center gap-4 pt-6">
-        <div className={`rounded-xl p-3 bg-secondary/50 ${color} group-hover:scale-110 transition-transform duration-200`}>
-          <Icon className="h-6 w-6" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm text-muted-foreground font-medium">{label}</p>
-          <p className="text-3xl font-bold text-foreground">{value}</p>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 function ProgressBar({
   label,
   value,
-  color = "bg-orange-500",
+  color = "bg-gradient-to-r from-amber-500 to-orange-500",
 }: {
   label: string
   value: number
   color?: string
 }) {
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-sm">
-        <span className="text-muted-foreground truncate max-w-[70%]">{label}</span>
-        <span className="font-medium">{value}%</span>
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <span className="text-sm text-muted-foreground/80 truncate max-w-[70%] font-medium">{label}</span>
+        <span className="text-sm font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">{value}%</span>
       </div>
-      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-2.5 w-full bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-full overflow-hidden">
         <div
-          className={`h-full ${color} rounded-full transition-all`}
+          className={`h-full ${color} rounded-full transition-all duration-1000 ease-out shadow-lg`}
           style={{ width: `${Math.min(value, 100)}%` }}
         />
       </div>
@@ -124,6 +99,8 @@ function StatusBadge({ status }: { status: string }) {
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 
 function AdminDashboard({ userId: _userId }: { userId: string }) {
+  const navigate = useNavigate()
+
   const { data: admissionAll } = useQuery({
     queryKey: ["admission-requests"],
     queryFn: () => getAdmissionRequests(),
@@ -178,25 +155,54 @@ function AdminDashboard({ userId: _userId }: { userId: string }) {
   const recentRequests = allRequests.slice(0, 5)
 
   return (
-    <div className="flex flex-col h-full gap-6 p-6 md:p-8">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Дашборд</h1>
-        <p className="text-muted-foreground mt-2">Обзор образовательного процесса</p>
+    <div className="flex flex-col h-full gap-8 p-6 md:p-8 relative">
+      {/* Animated gradient background blobs */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-gradient-to-br from-blue-500/20 via-transparent to-transparent rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-1/2 -right-32 w-80 h-80 bg-gradient-to-bl from-emerald-500/20 via-transparent to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute -bottom-32 left-1/2 w-96 h-96 bg-gradient-to-tr from-purple-500/10 via-transparent to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }} />
       </div>
 
-      {/* KPI Cards */}
+      <div className="relative z-10">
+        <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent">Дашборд</h1>
+        <p className="text-muted-foreground/70 mt-3 text-lg">Обзор образовательного процесса</p>
+      </div>
+
+      {/* Metric Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard icon={Users} label="Всего студентов" value={uniqueStudents} color="text-primary" />
-        <KpiCard icon={BookOpen} label="Активных групп" value={groups?.count ?? 0} color="text-[#9CCCE8]" />
-        <KpiCard icon={ClipboardList} label="Новых заявок" value={admissionNew?.count ?? 0} color="text-primary" />
-        <KpiCard icon={Star} label="Программ" value={programs?.count ?? 0} color="text-[#EE6C55]" />
+        <MetricCard
+          icon={Users}
+          label="Всего студентов"
+          value={uniqueStudents}
+          variant="success"
+          onClick={() => navigate({ to: "/admin" })}
+        />
+        <MetricCard
+          icon={BookOpen}
+          label="Активных групп"
+          value={groups?.count ?? 0}
+          onClick={() => navigate({ to: "/groups" })}
+        />
+        <MetricCard
+          icon={ClipboardList}
+          label="Новых заявок"
+          value={admissionNew?.count ?? 0}
+          onClick={() => navigate({ to: "/admission-requests" })}
+        />
+        <MetricCard
+          icon={Activity}
+          label="Программ"
+          value={programs?.count ?? 0}
+          variant="default"
+          onClick={() => navigate({ to: "/programs" })}
+        />
       </div>
 
       {/* Charts row */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+        <Card className="backdrop-blur-xl border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20">
           <CardHeader>
-            <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+            <CardTitle className="text-sm font-semibold uppercase tracking-widest bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               Заявки по статусам
             </CardTitle>
           </CardHeader>
@@ -207,15 +213,15 @@ function AdminDashboard({ userId: _userId }: { userId: string }) {
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#3E6E85" radius={[4, 4, 0, 0]} name="Заявки" />
+                <Bar dataKey="count" fill="#3B82F6" radius={[8, 8, 0, 0]} name="Заявки" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="backdrop-blur-xl border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20">
           <CardHeader>
-            <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+            <CardTitle className="text-sm font-semibold uppercase tracking-widest bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               Активность по месяцам
             </CardTitle>
           </CardHeader>
@@ -229,10 +235,11 @@ function AdminDashboard({ userId: _userId }: { userId: string }) {
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke="#FF9935"
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
+                  stroke="#10B981"
+                  strokeWidth={3}
+                  dot={{ r: 5, fill: "#10B981" }}
                   name="Активность"
+                  isAnimationActive={true}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -242,9 +249,9 @@ function AdminDashboard({ userId: _userId }: { userId: string }) {
 
       {/* Programs progress + Recent requests */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+        <Card className="backdrop-blur-xl border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20">
           <CardHeader>
-            <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+            <CardTitle className="text-sm font-semibold uppercase tracking-widest bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               Программы — прогресс
             </CardTitle>
           </CardHeader>
@@ -259,9 +266,9 @@ function AdminDashboard({ userId: _userId }: { userId: string }) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="backdrop-blur-xl border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20">
           <CardHeader>
-            <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+            <CardTitle className="text-sm font-semibold uppercase tracking-widest bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               Последние заявки
             </CardTitle>
           </CardHeader>
@@ -283,11 +290,11 @@ function AdminDashboard({ userId: _userId }: { userId: string }) {
                   </TableRow>
                 ) : (
                   recentRequests.map((req) => (
-                    <TableRow key={req.id}>
-                      <TableCell className="text-sm">
+                    <TableRow key={req.id} className="hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors">
+                      <TableCell className="text-sm font-medium text-foreground">
                         {req.full_name ?? req.email ?? "—"}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-muted-foreground/70">
                         {req.created_at
                           ? new Date(req.created_at).toLocaleDateString("ru-RU")
                           : "—"}
@@ -351,18 +358,32 @@ function TeacherDashboard({ userId }: { userId: string }) {
         <p className="text-muted-foreground mt-2">Управление группами и прогресс студентов</p>
       </div>
 
-      {/* KPI */}
+      {/* Metric Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <KpiCard icon={BookOpen} label="Мои группы" value={myGroups.length} color="text-primary" />
-        <KpiCard icon={Users} label="Студентов в группах" value={totalStudents} color="text-[#9CCCE8]" />
-        <KpiCard icon={CheckSquare} label="Ср. прогресс" value="0%" color="text-primary" />
+        <MetricCard
+          icon={BookOpen}
+          label="Мои группы"
+          value={myGroups.length}
+          variant="default"
+        />
+        <MetricCard
+          icon={Users}
+          label="Студентов в группах"
+          value={totalStudents}
+          variant="success"
+        />
+        <MetricCard
+          icon={CheckSquare}
+          label="Ср. прогресс"
+          value="0%"
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Groups progress */}
-        <Card>
+        <Card className="backdrop-blur-xl border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20">
           <CardHeader>
-            <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+            <CardTitle className="text-sm font-semibold uppercase tracking-widest bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               Прогресс групп
             </CardTitle>
           </CardHeader>
@@ -378,9 +399,9 @@ function TeacherDashboard({ userId }: { userId: string }) {
         </Card>
 
         {/* Leaderboard */}
-        <Card>
+        <Card className="backdrop-blur-xl border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20">
           <CardHeader>
-            <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+            <CardTitle className="text-sm font-semibold uppercase tracking-widest bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               Топ студентов
             </CardTitle>
           </CardHeader>
@@ -643,12 +664,32 @@ function StudentDashboard({ userId }: { userId: string }) {
         <p className="text-muted-foreground mt-2">Мой прогресс обучения и достижения</p>
       </div>
 
-      {/* KPI */}
+      {/* Metric Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard icon={BookOpen} label="Мои группы" value={myGroups.length} color="text-primary" />
-        <KpiCard icon={CheckSquare} label="Завершено модулей" value={completedModules} color="text-[#9CCCE8]" />
-        <KpiCard icon={Star} label="Мои очки" value={points?.points ?? 0} color="text-[#FF9935]" />
-        <KpiCard icon={Award} label="Достижений" value={achievements?.count ?? 0} color="text-[#EE6C55]" />
+        <MetricCard
+          icon={BookOpen}
+          label="Мои группы"
+          value={myGroups.length}
+          variant="default"
+        />
+        <MetricCard
+          icon={CheckSquare}
+          label="Завершено модулей"
+          value={completedModules}
+          variant="success"
+        />
+        <MetricCard
+          icon={Star}
+          label="Мои очки"
+          value={points?.points ?? 0}
+          variant="warning"
+        />
+        <MetricCard
+          icon={Award}
+          label="Достижений"
+          value={achievements?.count ?? 0}
+          variant="success"
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-4">

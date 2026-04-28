@@ -97,6 +97,10 @@ function CreateRequestDialog({
   const [comment, setComment] = useState("")
   const [source, setSource] = useState("website")
   const [assignedToId, setAssignedToId] = useState("")
+  const [isForChild, setIsForChild] = useState(false)
+  const [childName, setChildName] = useState("")
+  const [guardianName, setGuardianName] = useState("")
+  const [guardianPhone, setGuardianPhone] = useState("")
 
   const mutation = useMutation({
     mutationFn: async (body: Parameters<typeof createAdmissionRequest>[0]) => {
@@ -112,6 +116,7 @@ function CreateRequestDialog({
       onOpenChange(false)
       setFullName(""); setEmail(""); setPhone(""); setProgramInterest(""); setComment("")
       setSource("website"); setAssignedToId("")
+      setIsForChild(false); setChildName(""); setGuardianName(""); setGuardianPhone("")
     },
     onError: () => showErrorToast("Не удалось создать заявку"),
   })
@@ -126,6 +131,10 @@ function CreateRequestDialog({
       program_interest: programInterest.trim() || null,
       comment: comment.trim() || null,
       source,
+      is_for_child: isForChild,
+      child_name: isForChild ? childName.trim() || null : null,
+      guardian_name: isForChild ? guardianName.trim() || null : null,
+      guardian_phone: isForChild ? guardianPhone.trim() || null : null,
     })
   }
 
@@ -170,6 +179,33 @@ function CreateRequestDialog({
                 </SelectContent>
               </Select>
             </div>
+            <div className="col-span-2 space-y-1.5">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={isForChild}
+                  onChange={(e) => setIsForChild(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm">Заявка для ребенка</span>
+              </label>
+            </div>
+            {isForChild && (
+              <>
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Имя ребенка</Label>
+                  <Input value={childName} onChange={(e) => setChildName(e.target.value)} placeholder="Имя ребенка" />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Имя опекуна</Label>
+                  <Input value={guardianName} onChange={(e) => setGuardianName(e.target.value)} placeholder="ФИО опекуна" />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Телефон опекуна</Label>
+                  <Input value={guardianPhone} onChange={(e) => setGuardianPhone(e.target.value)} placeholder="+7 (999) 000-00-00" />
+                </div>
+              </>
+            )}
             <div className="col-span-2 space-y-1.5">
               <Label>Интерес к программе</Label>
               <Input value={programInterest} onChange={(e) => setProgramInterest(e.target.value)} placeholder="Название программы" />
@@ -216,6 +252,10 @@ function EditRequestDialog({
   const [programInterest, setProgramInterest] = useState(request.program_interest ?? "")
   const [comment, setComment] = useState(request.comment ?? "")
   const [source, setSource] = useState(request.source)
+  const [isForChild, setIsForChild] = useState(request.is_for_child ?? false)
+  const [childName, setChildName] = useState(request.child_name ?? "")
+  const [guardianName, setGuardianName] = useState(request.guardian_name ?? "")
+  const [guardianPhone, setGuardianPhone] = useState(request.guardian_phone ?? "")
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -226,6 +266,10 @@ function EditRequestDialog({
         program_interest: programInterest.trim() || null,
         comment: comment.trim() || null,
         source,
+        is_for_child: isForChild,
+        child_name: isForChild ? childName.trim() || null : null,
+        guardian_name: isForChild ? guardianName.trim() || null : null,
+        guardian_phone: isForChild ? guardianPhone.trim() || null : null,
       } as Parameters<typeof updateAdmissionRequest>[1]),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admission-requests"] })
@@ -270,7 +314,34 @@ function EditRequestDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="col-span-2 space-y-1.5">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={isForChild}
+                  onChange={(e) => setIsForChild(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm">Заявка для ребенка</span>
+              </label>
+            </div>
+            {isForChild && (
+              <>
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Имя ребенка</Label>
+                  <Input value={childName} onChange={(e) => setChildName(e.target.value)} />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Имя опекуна</Label>
+                  <Input value={guardianName} onChange={(e) => setGuardianName(e.target.value)} />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Телефон опекуна</Label>
+                  <Input value={guardianPhone} onChange={(e) => setGuardianPhone(e.target.value)} />
+                </div>
+              </>
+            )}
+            <div className="col-span-2 space-y-1.5">
               <Label>Интерес к программе</Label>
               <Input value={programInterest} onChange={(e) => setProgramInterest(e.target.value)} />
             </div>
@@ -438,9 +509,19 @@ function RequestRow({
         <EditRequestDialog open={editOpen} onOpenChange={setEditOpen} request={req} />
       )}
       <TableRow>
-        <TableCell className="font-medium">{req.full_name}</TableCell>
+        <TableCell className="font-medium">
+          <div>{req.full_name}</div>
+          {req.is_for_child && req.child_name && (
+            <div className="text-xs text-muted-foreground">👶 {req.child_name}</div>
+          )}
+        </TableCell>
         <TableCell className="text-sm text-muted-foreground">{req.email ?? "—"}</TableCell>
-        <TableCell className="text-sm text-muted-foreground">{req.phone_number}</TableCell>
+        <TableCell className="text-sm text-muted-foreground">
+          <div>{req.phone_number}</div>
+          {req.is_for_child && req.guardian_phone && (
+            <div className="text-xs text-muted-foreground">Опекун: {req.guardian_phone}</div>
+          )}
+        </TableCell>
         <TableCell className="text-sm text-muted-foreground">
           {SOURCE_LABELS[req.source] ?? req.source}
         </TableCell>
@@ -568,20 +649,27 @@ function AdmissionRequestsPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <CreateRequestDialog open={createOpen} onOpenChange={setCreateOpen} managers={managers} />
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight uppercase">Заявки</h1>
-          <p className="text-muted-foreground">Управление заявками на поступление</p>
+      {/* Header Section */}
+      <div className="rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 p-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Заявки на поступление
+            </h1>
+            <p className="text-muted-foreground mt-3">
+              Управление и рассмотрение заявок
+            </p>
+          </div>
+          {canManage && (
+            <Button onClick={() => setCreateOpen(true)} className="gap-2 bg-primary hover:bg-primary/90">
+              <Plus className="h-4 w-4" />
+              Добавить заявку
+            </Button>
+          )}
         </div>
-        {canManage && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Добавить заявку
-          </Button>
-        )}
       </div>
 
       {/* Search */}
@@ -591,7 +679,7 @@ function AdmissionRequestsPage() {
           placeholder="Поиск по ФИО, email, телефону..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+          className="pl-9 backdrop-blur-sm border-white/20 bg-white/40 dark:bg-slate-800/40"
         />
       </div>
 
@@ -603,6 +691,7 @@ function AdmissionRequestsPage() {
             size="sm"
             variant={statusFilter === f.value ? "default" : "outline"}
             onClick={() => setStatusFilter(f.value)}
+            className={statusFilter === f.value ? "bg-primary hover:bg-primary/90" : "border-white/20 hover:bg-white/10"}
           >
             {f.label}
             {f.count > 0 && (
@@ -614,7 +703,7 @@ function AdmissionRequestsPage() {
         ))}
       </div>
 
-      <Card>
+      <Card className="rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20">
         <CardContent className="p-0">
           <Table>
             <TableHeader>

@@ -268,6 +268,10 @@ export type AdmissionRequest = {
   created_at?: string | null
   updated_at?: string | null
   notes?: string | null
+  is_for_child?: boolean
+  child_name?: string | null
+  guardian_name?: string | null
+  guardian_phone?: string | null
 }
 
 export type AdmissionRequestsResponse = {

@@ -433,11 +433,13 @@ function GamificationPage() {
   const isTeacher = role === "teacher"
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight uppercase">Геймификация</h1>
-        <p className="text-muted-foreground">
-          {isAdmin ? "Управление достижениями" : isTeacher ? "Рейтинг студентов" : "Мои достижения и очки"}
+    <div className="space-y-8">
+      <div className="rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 p-8">
+        <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          Геймификация
+        </h1>
+        <p className="text-muted-foreground mt-3">
+          {isAdmin ? "Управление достижениями и наградами" : isTeacher ? "Рейтинг студентов и статистика" : "Мои достижения и очки"}
         </p>
       </div>
 

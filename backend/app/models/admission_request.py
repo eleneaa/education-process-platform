@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 
-from pydantic import EmailStr
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import DateTime
 
@@ -12,11 +11,15 @@ from .utils import get_datetime_utc
 
 class AdmissionRequestBase(SQLModel):
     full_name: str = Field(min_length=1, max_length=255)
-    email: EmailStr | None = None
+    email: str | None = Field(default=None, max_length=255)
     phone_number: str = Field(min_length=5, max_length=20)
     program_interest: str | None = Field(default=None, max_length=255)
     comment: str | None = Field(default=None, max_length=255)
     source: AdmissionRequestSource
+    is_for_child: bool = Field(default=False)
+    child_name: str | None = Field(default=None, max_length=255)
+    guardian_name: str | None = Field(default=None, max_length=255)
+    guardian_phone: str | None = Field(default=None, max_length=20)
 
 
 class AdmissionRequestCreate(AdmissionRequestBase):
@@ -25,7 +28,7 @@ class AdmissionRequestCreate(AdmissionRequestBase):
 
 class AdmissionRequestUpdate(SQLModel):
     full_name: str | None = Field(default=None, min_length=1, max_length=255)
-    email: EmailStr | None = None
+    email: str | None = Field(default=None, max_length=255)
     phone_number: str | None = Field(default=None, min_length=5, max_length=20)
     program_interest: str | None = Field(default=None, max_length=255)
     comment: str | None = Field(default=None, max_length=255)
@@ -34,8 +37,18 @@ class AdmissionRequestUpdate(SQLModel):
     assigned_to_id: uuid.UUID | None = None
 
 
-class AdmissionRequestPublic(AdmissionRequestBase):
+class AdmissionRequestPublic(SQLModel):
     id: uuid.UUID
+    full_name: str
+    email: str | None = None
+    phone_number: str
+    program_interest: str | None = None
+    comment: str | None = None
+    source: AdmissionRequestSource
+    is_for_child: bool
+    child_name: str | None = None
+    guardian_name: str | None = None
+    guardian_phone: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     status: AdmissionRequestStatus

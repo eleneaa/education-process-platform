@@ -37,3 +37,8 @@ api_router.include_router(teacher_recommendations.router)
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)
+
+if settings.telegram_enabled:
+    from app.integrations.telegram.router import router as telegram_router
+
+    api_router.include_router(telegram_router)

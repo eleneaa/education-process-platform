@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   BookOpen,
   Pencil,
@@ -15,7 +15,6 @@ import { useState } from "react"
 import {
   createModule,
   createProgram,
-  deleteProgram,
   deleteModule,
   getModules,
   getPrograms,
@@ -26,7 +25,6 @@ import type { Module, Program } from "@/client/custom-types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -291,27 +289,33 @@ function ModuleForm({
 interface ProgramCardProps {
   program: Program
   moduleCount: number
-  onEdit: (program: Program) => void
-  onDelete: (program: Program) => void
   onManageModules: (program: Program) => void
 }
 
 function ProgramCard({
   program,
   moduleCount,
-  onEdit,
-  onDelete,
   onManageModules,
 }: ProgramCardProps) {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const status = program.status || "draft"
+
+  const iconColorMap = {
+    draft: "text-amber-600",
+    on_review: "text-blue-600",
+    approved: "text-emerald-600",
+    rejected: "text-red-600",
+  }
 
   return (
-    <>
-      <Card className="group hover:shadow-lg transition-all duration-200 overflow-hidden">
-        <CardContent className="p-6">
+    <Link to="/programs/$programId" params={{ programId: program.id }}>
+      <div className={`relative group bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 border border-white/20 rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-2 backdrop-blur-xl`}>
+        {/* Top accent bar */}
+        <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${status === 'draft' ? 'from-amber-400 to-orange-400' : status === 'on_review' ? 'from-blue-400 to-cyan-400' : status === 'approved' ? 'from-emerald-400 to-teal-400' : 'from-red-400 to-rose-400'}`} />
+
+        <div className="p-6">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors truncate">
+              <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors duration-300 truncate">
                 {program.title}
               </h3>
               {program.description && (
@@ -320,59 +324,111 @@ function ProgramCard({
                 </p>
               )}
             </div>
-            <BookOpen className="h-6 w-6 text-primary/40 shrink-0" />
+            <div className={`p-2 rounded-xl ${iconColorMap[status as keyof typeof iconColorMap]} bg-opacity-10`}>
+              <BookOpen className={`h-6 w-6 ${iconColorMap[status as keyof typeof iconColorMap]} shrink-0`} />
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 mb-4">
-            <Badge variant={statusColor[program.status || "draft"]}>
-              {STATUS_LABELS[program.status || "draft"]}
-            </Badge>
-            <Badge variant="outline">
-              <Layers className="h-3 w-3 mr-1" />
-              {moduleCount} модулей
-            </Badge>
-          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Badge variant={statusColor[status]} className="font-medium">
+                {STATUS_LABELS[status]}
+              </Badge>
+              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                <Layers className="h-3.5 w-3.5" />
+                {moduleCount}
+              </span>
+            </div>
 
-          <div className="flex gap-2">
             <Button
               size="sm"
-              variant="ghost"
-              onClick={() => onManageModules(program)}
-              className="flex-1 text-xs"
+              onClick={(e) => {
+                e.preventDefault()
+                onManageModules(program)
+              }}
+              className="w-full font-medium opacity-90 group-hover:opacity-100 transition-opacity duration-300"
             >
               <Layers className="h-4 w-4 mr-2" />
               Модули
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onEdit(program)}
-              className="flex-1 text-xs"
-            >
-              <Pencil className="h-4 w-4 mr-2" />
-              Редактировать
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              className="text-destructive hover:bg-destructive/10 flex-1 text-xs"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Удалить
-            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+    </Link>
+  )
+}
 
-      <ConfirmDeleteDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={() => onDelete(program)}
-        title="Удалить программу?"
-        description={`Вы уверены, что хотите удалить программу "${program.title}"? Это действие необратимо.`}
-      />
-    </>
+// ─── Program List Item ───────────────────────────────────────────────────────
+
+interface ProgramListItemProps {
+  program: Program
+  moduleCount: number
+  onManageModules: (program: Program) => void
+}
+
+function ProgramListItem({
+  program,
+  moduleCount,
+  onManageModules,
+}: ProgramListItemProps) {
+  const statusColorMap = {
+    draft: "border-l-amber-400",
+    on_review: "border-l-blue-400",
+    approved: "border-l-emerald-400",
+    rejected: "border-l-red-400",
+  }
+
+  const statusBgMap = {
+    draft: "group-hover:bg-amber-50/50",
+    on_review: "group-hover:bg-blue-50/50",
+    approved: "group-hover:bg-emerald-50/50",
+    rejected: "group-hover:bg-red-50/50",
+  }
+
+  const statusIconMap = {
+    draft: "text-amber-600",
+    on_review: "text-blue-600",
+    approved: "text-emerald-600",
+    rejected: "text-red-600",
+  }
+
+  const status = program.status || "draft"
+
+  return (
+    <Link to="/programs/$programId" params={{ programId: program.id }}>
+      <div className={`flex items-center gap-5 px-5 py-5 border-l-4 rounded-xl backdrop-blur-sm ${statusColorMap[status as keyof typeof statusColorMap]} bg-white/40 hover:bg-white/80 ${statusBgMap[status as keyof typeof statusBgMap]} shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group min-h-20 transform hover:scale-[1.02] hover:-translate-y-0.5`}>
+        <div className={`p-2.5 rounded-lg ${statusIconMap[status as keyof typeof statusIconMap]} bg-opacity-10`}>
+          <BookOpen className={`h-6 w-6 ${statusIconMap[status as keyof typeof statusIconMap]} shrink-0`} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors duration-300 truncate">
+            {program.title}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">{moduleCount} модулей</p>
+        </div>
+
+        <Badge
+          variant={statusColor[status]}
+          className="shrink-0 font-medium"
+        >
+          {STATUS_LABELS[status]}
+        </Badge>
+
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={(e) => {
+            e.preventDefault()
+            onManageModules(program)
+          }}
+          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-primary/10"
+        >
+          <Layers className="h-4 w-4 mr-1.5" />
+          Модули
+        </Button>
+      </div>
+    </Link>
   )
 }
 
@@ -430,15 +486,6 @@ function ProgramsPage() {
     onError: () => showErrorToast("Ошибка при обновлении программы"),
   })
 
-  const deleteProgramMutation = useMutation({
-    mutationFn: deleteProgram,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] })
-      showSuccessToast("Программа удалена")
-    },
-    onError: () => showErrorToast("Ошибка при удалении программы"),
-  })
-
   const createModuleMutation = useMutation({
     mutationFn: createModule,
     onSuccess: () => {
@@ -472,11 +519,6 @@ function ProgramsPage() {
 
   const handleCreateProgram = () => {
     setEditingProgram(undefined)
-    setProgramFormOpen(true)
-  }
-
-  const handleEditProgram = (program: Program) => {
-    setEditingProgram(program)
     setProgramFormOpen(true)
   }
 
@@ -538,23 +580,27 @@ function ProgramsPage() {
     modules.filter((m) => m.program_id === programId)
 
   return (
-    <div className="flex flex-col h-full gap-6 p-6 md:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Программы обучения</h1>
-          <p className="text-muted-foreground mt-2">
-            Всего программ: {filteredPrograms.length}
-          </p>
+    <div className="flex flex-col h-full gap-8">
+      {/* Header Section */}
+      <div className="rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+          <div>
+            <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Программы обучения
+            </h1>
+            <p className="text-muted-foreground mt-3">
+              Всего программ: <span className="font-semibold text-foreground">{filteredPrograms.length}</span>
+            </p>
+          </div>
+          <Button
+            onClick={handleCreateProgram}
+            size="lg"
+            className="gap-2 bg-primary hover:bg-primary/90 w-full sm:w-auto"
+          >
+            <Plus className="h-5 w-5" />
+            Создать программу
+          </Button>
         </div>
-        <Button
-          onClick={handleCreateProgram}
-          size="lg"
-          className="gap-2"
-        >
-          <Plus className="h-5 w-5" />
-          Создать программу
-        </Button>
       </div>
 
       {/* Toolbar */}
@@ -566,7 +612,7 @@ function ProgramsPage() {
               placeholder="Поиск программ..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 backdrop-blur-sm border-white/20 bg-white/40 dark:bg-slate-800/40"
             />
           </div>
 
@@ -575,6 +621,7 @@ function ProgramsPage() {
               variant={view === "grid" ? "default" : "outline"}
               size="sm"
               onClick={() => setView("grid")}
+              className={view === "grid" ? "bg-primary hover:bg-primary/90" : "border-white/20 hover:bg-white/10"}
             >
               <Grid className="h-4 w-4" />
             </Button>
@@ -582,6 +629,7 @@ function ProgramsPage() {
               variant={view === "list" ? "default" : "outline"}
               size="sm"
               onClick={() => setView("list")}
+              className={view === "list" ? "bg-primary hover:bg-primary/90" : "border-white/20 hover:bg-white/10"}
             >
               <ListIcon className="h-4 w-4" />
             </Button>
@@ -624,20 +672,27 @@ function ProgramsPage() {
         className={
           view === "grid"
             ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max"
-            : "space-y-3"
+            : "space-y-2 max-w-4xl"
         }
       >
         {filteredPrograms.length > 0 ? (
-          filteredPrograms.map((program) => (
-            <ProgramCard
-              key={program.id}
-              program={program}
-              moduleCount={programModules(program.id).length}
-              onEdit={handleEditProgram}
-              onDelete={(p) => deleteProgramMutation.mutate(p.id)}
-              onManageModules={handleManageModules}
-            />
-          ))
+          filteredPrograms.map((program) =>
+            view === "grid" ? (
+              <ProgramCard
+                key={program.id}
+                program={program}
+                moduleCount={programModules(program.id).length}
+                onManageModules={handleManageModules}
+              />
+            ) : (
+              <ProgramListItem
+                key={program.id}
+                program={program}
+                moduleCount={programModules(program.id).length}
+                onManageModules={handleManageModules}
+              />
+            )
+          )
         ) : (
           <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
             <BookOpen className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />

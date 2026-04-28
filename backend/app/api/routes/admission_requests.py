@@ -1,10 +1,13 @@
+import logging
 from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query
+from sqlmodel import select
 
 from app.crud import crud_admission_request
 from app.api.deps import SessionDep, CurrentUser
+from app.core.config import settings
 from app.models import (
     AdmissionRequest,
     AdmissionRequestCreate,
@@ -14,6 +17,8 @@ from app.models import (
     User,
 )
 from sqlmodel import SQLModel
+
+logger = logging.getLogger(__name__)
 
 
 class AdmissionRequestEnriched(AdmissionRequestPublic):
@@ -109,7 +114,7 @@ def create_admission_request(
 
 
 @router.patch("/{admission_request_id}", response_model=AdmissionRequestEnriched)
-def update_admission_request(
+async def update_admission_request(
     *,
     session: SessionDep,
     admission_request_id: UUID,
@@ -135,6 +140,30 @@ def update_admission_request(
         db_admission_request=admission_request,
         admission_request_in=admission_request_in,
     )
+
+    # Notify student via Telegram if status changed
+    if (
+        admission_request_in.status is not None
+        and settings.telegram_enabled
+        and admission_request.email
+    ):
+        user = session.exec(
+            select(User).where(User.email == admission_request.email)
+        ).first()
+        if user and user.telegram_chat_id:
+            try:
+                from app.integrations.telegram.notifications import (
+                    notify_student_status_change,
+                )
+
+                await notify_student_status_change(
+                    telegram_chat_id=user.telegram_chat_id,
+                    admission=admission_request,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Failed to send Telegram notification: %s", exc, exc_info=True
+                )
 
     return _enrich(session, admission_request)
 

@@ -1,15 +1,17 @@
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { BookOpen, MessageSquare, Trophy, Award, ArrowRight } from "lucide-react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { BookOpen, MessageSquare, Trophy, Award, ArrowRight, Send } from "lucide-react"
 import { useState } from "react"
 
-import { getEnrollments, getStudentRecommendations, getPrograms } from "@/client/custom-api"
+import { getEnrollments, getStudentRecommendations, getPrograms, createAdmissionRequest, getAdmissionRequests } from "@/client/custom-api"
 import type { TeacherRecommendation, Program } from "@/client/custom-types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { LoadingButton } from "@/components/ui/loading-button"
 import { Badge } from "@/components/ui/badge"
 import { RightPanel } from "@/components/RightPanel"
 import useAuth from "@/hooks/useAuth"
+import useCustomToast from "@/hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/trajectory")({
   component: TrajectoryPage,
@@ -20,8 +22,12 @@ export const Route = createFileRoute("/_layout/trajectory")({
 
 function TrajectoryPage() {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+
   const [selectedProgram, setSelectedProgram] = useState<Program | undefined>()
   const [isProgramDetailsOpen, setIsProgramDetailsOpen] = useState(false)
+  const [showAllPrograms, setShowAllPrograms] = useState(false)
 
   const { data: enrollments } = useQuery({
     queryKey: ["enrollments", user?.id],
@@ -45,6 +51,35 @@ function TrajectoryPage() {
     placeholderData: { data: [], count: 0 },
   })
 
+  const { data: admissionRequests } = useQuery({
+    queryKey: ["admissionRequests"],
+    queryFn: () => getAdmissionRequests(),
+    placeholderData: { data: [], count: 0 },
+  })
+
+  const requestMutation = useMutation({
+    mutationFn: async (programTitle: string) => {
+      if (!user?.email) throw new Error("User email not found")
+      return createAdmissionRequest({
+        full_name: user.full_name || "Студент",
+        email: user.email,
+        phone_number: "+7 (999) 999-99-99",
+        program_interest: programTitle,
+        comment: "Запрос на зачисление через траекторию обучения",
+        source: "website",
+      })
+    },
+    onSuccess: () => {
+      showSuccessToast("Заявка отправлена! Администратор свяжется с вами")
+      queryClient.invalidateQueries({ queryKey: ["admissionRequests"] })
+      setIsProgramDetailsOpen(false)
+      setSelectedProgram(undefined)
+    },
+    onError: () => {
+      showErrorToast("Не удалось отправить заявку")
+    },
+  })
+
   const enrollmentList = enrollments?.data ?? []
   const recommendationList = recommendations ?? []
   const programList = programs?.data ?? []
@@ -54,6 +89,9 @@ function TrajectoryPage() {
   const otherPrograms = programList.filter((p) => !enrolledProgramIds.has(p.id))
 
   const enrolledPrograms = programList.filter((p) => enrolledProgramIds.has(p.id))
+
+  // Показываем первые 4 программы по умолчанию
+  const visiblePrograms = showAllPrograms ? otherPrograms : otherPrograms.slice(0, 4)
 
   const handleProgramClick = (program: Program) => {
     setSelectedProgram(program)
@@ -65,12 +103,28 @@ function TrajectoryPage() {
     setSelectedProgram(undefined)
   }
 
+  const handleRequestEnroll = () => {
+    if (!selectedProgram?.title) return
+    requestMutation.mutate(selectedProgram.title)
+  }
+
+  const hasExistingRequest = (programTitle: string) => {
+    const requests = admissionRequests?.data ?? []
+    return requests.some(
+      (req) => req.program_interest?.toLowerCase() === programTitle.toLowerCase() &&
+               req.email === user?.email &&
+               req.status !== "rejected"
+    )
+  }
+
   return (
-    <div className="flex flex-col h-full gap-6 p-6 md:p-8">
+    <div className="flex flex-col h-full gap-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Траектория обучения</h1>
-        <p className="text-muted-foreground mt-2">
+      <div className="rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 p-8">
+        <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          Траектория обучения
+        </h1>
+        <p className="text-muted-foreground mt-3">
           Персональные рекомендации и планирование вашего обучения
         </p>
       </div>
@@ -86,7 +140,7 @@ function TrajectoryPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {enrolledPrograms.map((program) => (
-                <Card key={program.id} className="group hover:shadow-lg transition-all duration-200">
+                <Card key={program.id} className="group overflow-hidden rounded-2xl backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="flex-1 min-w-0">
@@ -101,14 +155,12 @@ function TrajectoryPage() {
                       </div>
                       <Award className="h-6 w-6 text-primary/40 shrink-0" />
                     </div>
-                    <Button
-                      onClick={() => handleProgramClick(program)}
-                      className="w-full mt-4 gap-2"
-                      variant="outline"
-                    >
-                      Подробнее
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
+                    <Link to={"/my-programs" as any} className="block">
+                      <Button className="w-full mt-4 gap-2" variant="outline">
+                        Перейти в программу
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               ))}
@@ -150,8 +202,8 @@ function TrajectoryPage() {
               <Badge variant="secondary">{otherPrograms.length}</Badge>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {otherPrograms.map((program) => (
-                <Card key={program.id} className="group hover:shadow-lg transition-all duration-200">
+              {visiblePrograms.map((program) => (
+                <Card key={program.id} className="group overflow-hidden rounded-2xl backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="flex-1 min-w-0">
@@ -169,14 +221,27 @@ function TrajectoryPage() {
                     <Button
                       onClick={() => handleProgramClick(program)}
                       className="w-full mt-4 gap-2"
+                      variant="outline"
                     >
-                      <ArrowRight className="h-4 w-4" />
-                      Подробнее
+                      <Send className="h-4 w-4" />
+                      Запросить зачисление
                     </Button>
                   </CardContent>
                 </Card>
               ))}
             </div>
+            {!showAllPrograms && otherPrograms.length > 4 && (
+              <div className="flex justify-center mt-6">
+                <Button
+                  onClick={() => setShowAllPrograms(true)}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  Показать ещё ({otherPrograms.length - 4})
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </section>
         )}
 
@@ -197,14 +262,14 @@ function TrajectoryPage() {
         isOpen={isProgramDetailsOpen && !!selectedProgram}
         onClose={handleClosePanel}
         title={selectedProgram?.title || ""}
-        description="Подробная информация"
+        description="Запросить зачисление на программу"
         width="md"
       >
         {selectedProgram && (
           <div className="space-y-6">
             {selectedProgram.description && (
               <div>
-                <h3 className="font-semibold text-foreground mb-2">Описание программы</h3>
+                <h3 className="font-semibold text-foreground mb-2">О программе</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {selectedProgram.description}
                 </p>
@@ -214,24 +279,49 @@ function TrajectoryPage() {
             {selectedProgram.status && (
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-muted-foreground">Статус:</span>
-                <Badge variant="outline">{selectedProgram.status}</Badge>
+                <Badge variant={selectedProgram.status === "approved" ? "default" : "outline"}>
+                  {selectedProgram.status === "approved" ? "Активна" : selectedProgram.status}
+                </Badge>
               </div>
             )}
 
-            <div className="border-t border-border pt-4 flex gap-3">
-              <Button
-                onClick={handleClosePanel}
-                variant="outline"
-                className="flex-1"
-              >
-                Закрыть
-              </Button>
-              <Button
-                className="flex-1"
-              >
-                Подробнее
-              </Button>
-            </div>
+            {selectedProgram && hasExistingRequest(selectedProgram.title) ? (
+              <div className="border-t border-border pt-4">
+                <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 text-center">
+                  <p className="text-sm font-medium text-primary">
+                    ✓ Заявка уже отправлена
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Администратор рассмотрит вашу заявку в ближайшее время
+                  </p>
+                </div>
+                <Button
+                  onClick={handleClosePanel}
+                  variant="outline"
+                  className="w-full mt-3"
+                >
+                  Закрыть
+                </Button>
+              </div>
+            ) : (
+              <div className="border-t border-border pt-4 flex gap-3">
+                <Button
+                  onClick={handleClosePanel}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Отмена
+                </Button>
+                <LoadingButton
+                  onClick={handleRequestEnroll}
+                  loading={requestMutation.isPending}
+                  className="flex-1 gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  Отправить заявку
+                </LoadingButton>
+              </div>
+            )}
           </div>
         )}
       </RightPanel>

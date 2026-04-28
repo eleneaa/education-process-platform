@@ -1,5 +1,4 @@
 import { Appearance } from "@/components/Common/Appearance"
-import { Logo } from "@/components/Common/Logo"
 import { Footer } from "./Footer"
 
 interface AuthLayoutProps {
@@ -11,8 +10,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
     <div className="grid min-h-svh lg:grid-cols-2">
       {/* Left: form area */}
       <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-between items-center">
-          <Logo variant="full" className="h-8" asLink={false} />
+        <div className="flex justify-end items-center">
           <Appearance />
         </div>
         <div className="flex flex-1 items-center justify-center">

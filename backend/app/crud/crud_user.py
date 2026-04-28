@@ -60,3 +60,18 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     return db_user
 
 
+def get_user_by_telegram_chat_id(
+    *, session: Session, telegram_chat_id: int
+) -> User | None:
+    statement = select(User).where(User.telegram_chat_id == telegram_chat_id)
+    return session.exec(statement).first()
+
+
+def set_user_telegram_chat_id(
+    *, session: Session, user: User, telegram_chat_id: int
+) -> User:
+    user.telegram_chat_id = telegram_chat_id
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user

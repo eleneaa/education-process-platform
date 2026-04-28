@@ -55,15 +55,23 @@ function ItemsTable() {
 
 function Items() {
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Items</h1>
-          <p className="text-muted-foreground">Create and manage your items</p>
+    <div className="flex flex-col gap-8">
+      <div className="rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 p-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Предметы
+            </h1>
+            <p className="text-muted-foreground mt-3">
+              Создавайте и управляйте содержимым курсов
+            </p>
+          </div>
+          <AddItem />
         </div>
-        <AddItem />
       </div>
-      <ItemsTable />
+      <div className="rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 p-6">
+        <ItemsTable />
+      </div>
     </div>
   )
 }

@@ -323,7 +323,7 @@ function GroupCard({
 
   return (
     <>
-      <Card className="group hover:shadow-lg transition-all duration-200">
+      <Card className="group overflow-hidden rounded-2xl backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex-1 min-w-0">
@@ -551,23 +551,27 @@ function GroupsPage() {
     : new Set<string>()
 
   return (
-    <div className="flex flex-col h-full gap-6 p-6 md:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Группы обучения</h1>
-          <p className="text-muted-foreground mt-2">
-            Всего групп: {filteredGroups.length}
-          </p>
+    <div className="flex flex-col h-full gap-8">
+      {/* Header Section */}
+      <div className="rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+          <div>
+            <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Группы обучения
+            </h1>
+            <p className="text-muted-foreground mt-3">
+              Всего групп: <span className="font-semibold text-foreground">{filteredGroups.length}</span>
+            </p>
+          </div>
+          <Button
+            onClick={handleCreateGroup}
+            size="lg"
+            className="gap-2 bg-primary hover:bg-primary/90 w-full sm:w-auto"
+          >
+            <Plus className="h-5 w-5" />
+            Создать группу
+          </Button>
         </div>
-        <Button
-          onClick={handleCreateGroup}
-          size="lg"
-          className="gap-2"
-        >
-          <Plus className="h-5 w-5" />
-          Создать группу
-        </Button>
       </div>
 
       {/* Toolbar */}
@@ -578,7 +582,7 @@ function GroupsPage() {
             placeholder="Поиск групп..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 backdrop-blur-sm border-white/20 bg-white/40 dark:bg-slate-800/40"
           />
         </div>
 
@@ -587,6 +591,7 @@ function GroupsPage() {
             variant={view === "grid" ? "default" : "outline"}
             size="sm"
             onClick={() => setView("grid")}
+            className={view === "grid" ? "bg-primary hover:bg-primary/90" : "border-white/20 hover:bg-white/10"}
           >
             <Grid className="h-4 w-4" />
           </Button>
@@ -594,6 +599,7 @@ function GroupsPage() {
             variant={view === "list" ? "default" : "outline"}
             size="sm"
             onClick={() => setView("list")}
+            className={view === "list" ? "bg-primary hover:bg-primary/90" : "border-white/20 hover:bg-white/10"}
           >
             <ListIcon className="h-4 w-4" />
           </Button>

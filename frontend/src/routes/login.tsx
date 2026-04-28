@@ -155,27 +155,6 @@ function Login() {
                     {loginMutation.isPending ? "Вход..." : "Войти"}
                   </LoadingButton>
                 </div>
-
-                {/* Divider */}
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-border/50" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">или</span>
-                  </div>
-                </div>
-
-                {/* Sign Up Link */}
-                <div className="text-center text-sm">
-                  <span className="text-muted-foreground">Нет аккаунта? </span>
-                  <RouterLink
-                    to="/signup"
-                    className="font-semibold text-primary hover:text-primary/80 underline-offset-2 hover:underline transition-colors"
-                  >
-                    Зарегистрироваться
-                  </RouterLink>
-                </div>
               </form>
             </Form>
           </CardContent>
