@@ -98,6 +98,9 @@ class Settings(BaseSettings):
     def telegram_enabled(self) -> bool:
         return bool(self.TELEGRAM_BOT_TOKEN)
 
+    # Rate limiting for public endpoints
+    RATE_LIMIT_PUBLIC_ADMISSION: str = "5/hour"
+
     EMAIL_TEST_USER: EmailStr = "test@example.com"
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str

@@ -376,3 +376,23 @@ export async function createRecommendation(
 export async function deleteRecommendation(id: string): Promise<void> {
   await api.delete(`/teacher-recommendations/${id}`)
 }
+
+// ─── Public Admission Requests (no auth required) ────────────────────────────
+
+export async function createAdmissionRequestPublic(body: {
+  full_name: string
+  email?: string | null
+  phone_number: string
+  program_interest?: string | null
+  comment?: string | null
+  is_for_child?: boolean
+  child_name?: string | null
+  guardian_name?: string | null
+  guardian_phone?: string | null
+}): Promise<AdmissionRequest> {
+  const { data } = await axios.post<AdmissionRequest>(
+    `${import.meta.env.VITE_API_URL}/api/v1/admission-requests/public/create`,
+    body
+  )
+  return data
+}

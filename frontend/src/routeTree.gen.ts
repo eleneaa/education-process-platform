@@ -9,27 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ApplyRouteImport } from './routes/apply'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as LayoutTrajectoryRouteImport } from './routes/_layout/trajectory'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
-import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
-import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
-import { Route as LayoutAdmissionRequestsRouteImport } from './routes/_layout/admission-requests'
 import { Route as LayoutProgramsRouteImport } from './routes/_layout/programs'
+import { Route as LayoutMyProgramsRouteImport } from './routes/_layout/my-programs'
+import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutGroupsRouteImport } from './routes/_layout/groups'
 import { Route as LayoutGamificationRouteImport } from './routes/_layout/gamification'
-import { Route as LayoutTrajectoryRouteImport } from './routes/_layout/trajectory'
+import { Route as LayoutAdmissionRequestsRouteImport } from './routes/_layout/admission-requests'
+import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutProgramsProgramIdRouteImport } from './routes/_layout/programs_.$programId'
+import { Route as LayoutProgramsOldRouteImport } from './routes/_layout/programs.old'
+import { Route as LayoutGroupsOldRouteImport } from './routes/_layout/groups.old'
 
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -45,6 +43,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApplyRoute = ApplyRouteImport.update({
+  id: '/apply',
+  path: '/apply',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
   getParentRoute: () => rootRouteImport,
@@ -54,29 +57,29 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutTrajectoryRoute = LayoutTrajectoryRouteImport.update({
+  id: '/trajectory',
+  path: '/trajectory',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutItemsRoute = LayoutItemsRouteImport.update({
-  id: '/items',
-  path: '/items',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutAdminRoute = LayoutAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutAdmissionRequestsRoute = LayoutAdmissionRequestsRouteImport.update({
-  id: '/admission-requests',
-  path: '/admission-requests',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutProgramsRoute = LayoutProgramsRouteImport.update({
   id: '/programs',
   path: '/programs',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutMyProgramsRoute = LayoutMyProgramsRouteImport.update({
+  id: '/my-programs',
+  path: '/my-programs',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutItemsRoute = LayoutItemsRouteImport.update({
+  id: '/items',
+  path: '/items',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutGroupsRoute = LayoutGroupsRouteImport.update({
@@ -89,9 +92,14 @@ const LayoutGamificationRoute = LayoutGamificationRouteImport.update({
   path: '/gamification',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutTrajectoryRoute = LayoutTrajectoryRouteImport.update({
-  id: '/trajectory',
-  path: '/trajectory',
+const LayoutAdmissionRequestsRoute = LayoutAdmissionRequestsRouteImport.update({
+  id: '/admission-requests',
+  path: '/admission-requests',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutAdminRoute = LayoutAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutProgramsProgramIdRoute = LayoutProgramsProgramIdRouteImport.update({
@@ -99,126 +107,147 @@ const LayoutProgramsProgramIdRoute = LayoutProgramsProgramIdRouteImport.update({
   path: '/programs/$programId',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutProgramsOldRoute = LayoutProgramsOldRouteImport.update({
+  id: '/old',
+  path: '/old',
+  getParentRoute: () => LayoutProgramsRoute,
+} as any)
+const LayoutGroupsOldRoute = LayoutGroupsOldRouteImport.update({
+  id: '/old',
+  path: '/old',
+  getParentRoute: () => LayoutGroupsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof LayoutIndexRoute
+  '/apply': typeof ApplyRoute
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
-  '/items': typeof LayoutItemsRoute
-  '/settings': typeof LayoutSettingsRoute
   '/admission-requests': typeof LayoutAdmissionRequestsRoute
-  '/programs': typeof LayoutProgramsRoute
-  '/programs/$programId': typeof LayoutProgramsProgramIdRoute
-  '/groups': typeof LayoutGroupsRoute
   '/gamification': typeof LayoutGamificationRoute
+  '/groups': typeof LayoutGroupsRouteWithChildren
+  '/items': typeof LayoutItemsRoute
+  '/my-programs': typeof LayoutMyProgramsRoute
+  '/programs': typeof LayoutProgramsRouteWithChildren
+  '/settings': typeof LayoutSettingsRoute
   '/trajectory': typeof LayoutTrajectoryRoute
-  '/': typeof LayoutIndexRoute
+  '/groups/old': typeof LayoutGroupsOldRoute
+  '/programs/old': typeof LayoutProgramsOldRoute
+  '/programs/$programId': typeof LayoutProgramsProgramIdRoute
 }
 export interface FileRoutesByTo {
+  '/apply': typeof ApplyRoute
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
-  '/items': typeof LayoutItemsRoute
-  '/settings': typeof LayoutSettingsRoute
   '/admission-requests': typeof LayoutAdmissionRequestsRoute
-  '/programs': typeof LayoutProgramsRoute
-  '/programs/$programId': typeof LayoutProgramsProgramIdRoute
-  '/groups': typeof LayoutGroupsRoute
   '/gamification': typeof LayoutGamificationRoute
+  '/groups': typeof LayoutGroupsRouteWithChildren
+  '/items': typeof LayoutItemsRoute
+  '/my-programs': typeof LayoutMyProgramsRoute
+  '/programs': typeof LayoutProgramsRouteWithChildren
+  '/settings': typeof LayoutSettingsRoute
   '/trajectory': typeof LayoutTrajectoryRoute
   '/': typeof LayoutIndexRoute
+  '/groups/old': typeof LayoutGroupsOldRoute
+  '/programs/old': typeof LayoutProgramsOldRoute
+  '/programs/$programId': typeof LayoutProgramsProgramIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
+  '/apply': typeof ApplyRoute
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
-  '/_layout/items': typeof LayoutItemsRoute
-  '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/admission-requests': typeof LayoutAdmissionRequestsRoute
-  '/_layout/programs': typeof LayoutProgramsRoute
-  '/_layout/programs/$programId': typeof LayoutProgramsProgramIdRoute
-  '/_layout/groups': typeof LayoutGroupsRoute
   '/_layout/gamification': typeof LayoutGamificationRoute
+  '/_layout/groups': typeof LayoutGroupsRouteWithChildren
+  '/_layout/items': typeof LayoutItemsRoute
+  '/_layout/my-programs': typeof LayoutMyProgramsRoute
+  '/_layout/programs': typeof LayoutProgramsRouteWithChildren
+  '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/trajectory': typeof LayoutTrajectoryRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/groups/old': typeof LayoutGroupsOldRoute
+  '/_layout/programs/old': typeof LayoutProgramsOldRoute
+  '/_layout/programs_/$programId': typeof LayoutProgramsProgramIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
+    | '/apply'
     | '/login'
     | '/recover-password'
     | '/reset-password'
-    | '/signup'
     | '/admin'
-    | '/items'
-    | '/settings'
     | '/admission-requests'
-    | '/programs'
-    | '/programs/$programId'
-    | '/groups'
     | '/gamification'
+    | '/groups'
+    | '/items'
+    | '/my-programs'
+    | '/programs'
+    | '/settings'
     | '/trajectory'
-    | '/'
+    | '/groups/old'
+    | '/programs/old'
+    | '/programs/$programId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/apply'
     | '/login'
     | '/recover-password'
     | '/reset-password'
-    | '/signup'
     | '/admin'
-    | '/items'
-    | '/settings'
     | '/admission-requests'
-    | '/programs'
-    | '/programs/$programId'
-    | '/groups'
     | '/gamification'
+    | '/groups'
+    | '/items'
+    | '/my-programs'
+    | '/programs'
+    | '/settings'
     | '/trajectory'
     | '/'
+    | '/groups/old'
+    | '/programs/old'
+    | '/programs/$programId'
   id:
     | '__root__'
     | '/_layout'
+    | '/apply'
     | '/login'
     | '/recover-password'
     | '/reset-password'
-    | '/signup'
     | '/_layout/admin'
-    | '/_layout/items'
-    | '/_layout/settings'
     | '/_layout/admission-requests'
-    | '/_layout/programs'
-    | '/_layout/programs_/$programId'
-    | '/_layout/groups'
     | '/_layout/gamification'
+    | '/_layout/groups'
+    | '/_layout/items'
+    | '/_layout/my-programs'
+    | '/_layout/programs'
+    | '/_layout/settings'
     | '/_layout/trajectory'
     | '/_layout/'
+    | '/_layout/groups/old'
+    | '/_layout/programs/old'
+    | '/_layout/programs_/$programId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   LayoutRoute: typeof LayoutRouteWithChildren
+  ApplyRoute: typeof ApplyRoute
   LoginRoute: typeof LoginRoute
   RecoverPasswordRoute: typeof RecoverPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  SignupRoute: typeof SignupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -240,10 +269,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/apply': {
+      id: '/apply'
+      path: '/apply'
+      fullPath: '/apply'
+      preLoaderRoute: typeof ApplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_layout': {
       id: '/_layout'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof LayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -254,32 +290,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/trajectory': {
+      id: '/_layout/trajectory'
+      path: '/trajectory'
+      fullPath: '/trajectory'
+      preLoaderRoute: typeof LayoutTrajectoryRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof LayoutSettingsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/items': {
-      id: '/_layout/items'
-      path: '/items'
-      fullPath: '/items'
-      preLoaderRoute: typeof LayoutItemsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/admin': {
-      id: '/_layout/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof LayoutAdminRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/admission-requests': {
-      id: '/_layout/admission-requests'
-      path: '/admission-requests'
-      fullPath: '/admission-requests'
-      preLoaderRoute: typeof LayoutAdmissionRequestsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/programs': {
@@ -289,13 +311,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutProgramsRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/programs_/$programId': {
-      id: '/_layout/programs_/$programId'
-      path: '/programs/$programId'
-      fullPath: '/programs/$programId'
-      preLoaderRoute: typeof LayoutProgramsProgramIdRouteImport
+    '/_layout/my-programs': {
+      id: '/_layout/my-programs'
+      path: '/my-programs'
+      fullPath: '/my-programs'
+      preLoaderRoute: typeof LayoutMyProgramsRouteImport
       parentRoute: typeof LayoutRoute
-      params: { programId: string }
+    }
+    '/_layout/items': {
+      id: '/_layout/items'
+      path: '/items'
+      fullPath: '/items'
+      preLoaderRoute: typeof LayoutItemsRouteImport
+      parentRoute: typeof LayoutRoute
     }
     '/_layout/groups': {
       id: '/_layout/groups'
@@ -311,40 +339,94 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutGamificationRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/trajectory': {
-      id: '/_layout/trajectory'
-      path: '/trajectory'
-      fullPath: '/trajectory'
-      preLoaderRoute: typeof LayoutTrajectoryRouteImport
+    '/_layout/admission-requests': {
+      id: '/_layout/admission-requests'
+      path: '/admission-requests'
+      fullPath: '/admission-requests'
+      preLoaderRoute: typeof LayoutAdmissionRequestsRouteImport
       parentRoute: typeof LayoutRoute
+    }
+    '/_layout/admin': {
+      id: '/_layout/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof LayoutAdminRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/programs_/$programId': {
+      id: '/_layout/programs_/$programId'
+      path: '/programs/$programId'
+      fullPath: '/programs/$programId'
+      preLoaderRoute: typeof LayoutProgramsProgramIdRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/programs/old': {
+      id: '/_layout/programs/old'
+      path: '/old'
+      fullPath: '/programs/old'
+      preLoaderRoute: typeof LayoutProgramsOldRouteImport
+      parentRoute: typeof LayoutProgramsRoute
+    }
+    '/_layout/groups/old': {
+      id: '/_layout/groups/old'
+      path: '/old'
+      fullPath: '/groups/old'
+      preLoaderRoute: typeof LayoutGroupsOldRouteImport
+      parentRoute: typeof LayoutGroupsRoute
     }
   }
 }
 
+interface LayoutGroupsRouteChildren {
+  LayoutGroupsOldRoute: typeof LayoutGroupsOldRoute
+}
+
+const LayoutGroupsRouteChildren: LayoutGroupsRouteChildren = {
+  LayoutGroupsOldRoute: LayoutGroupsOldRoute,
+}
+
+const LayoutGroupsRouteWithChildren = LayoutGroupsRoute._addFileChildren(
+  LayoutGroupsRouteChildren,
+)
+
+interface LayoutProgramsRouteChildren {
+  LayoutProgramsOldRoute: typeof LayoutProgramsOldRoute
+}
+
+const LayoutProgramsRouteChildren: LayoutProgramsRouteChildren = {
+  LayoutProgramsOldRoute: LayoutProgramsOldRoute,
+}
+
+const LayoutProgramsRouteWithChildren = LayoutProgramsRoute._addFileChildren(
+  LayoutProgramsRouteChildren,
+)
+
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
-  LayoutItemsRoute: typeof LayoutItemsRoute
-  LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutAdmissionRequestsRoute: typeof LayoutAdmissionRequestsRoute
-  LayoutProgramsRoute: typeof LayoutProgramsRoute
-  LayoutProgramsProgramIdRoute: typeof LayoutProgramsProgramIdRoute
-  LayoutGroupsRoute: typeof LayoutGroupsRoute
   LayoutGamificationRoute: typeof LayoutGamificationRoute
+  LayoutGroupsRoute: typeof LayoutGroupsRouteWithChildren
+  LayoutItemsRoute: typeof LayoutItemsRoute
+  LayoutMyProgramsRoute: typeof LayoutMyProgramsRoute
+  LayoutProgramsRoute: typeof LayoutProgramsRouteWithChildren
+  LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutTrajectoryRoute: typeof LayoutTrajectoryRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
+  LayoutProgramsProgramIdRoute: typeof LayoutProgramsProgramIdRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
-  LayoutItemsRoute: LayoutItemsRoute,
-  LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutAdmissionRequestsRoute: LayoutAdmissionRequestsRoute,
-  LayoutProgramsRoute: LayoutProgramsRoute,
-  LayoutProgramsProgramIdRoute: LayoutProgramsProgramIdRoute,
-  LayoutGroupsRoute: LayoutGroupsRoute,
   LayoutGamificationRoute: LayoutGamificationRoute,
+  LayoutGroupsRoute: LayoutGroupsRouteWithChildren,
+  LayoutItemsRoute: LayoutItemsRoute,
+  LayoutMyProgramsRoute: LayoutMyProgramsRoute,
+  LayoutProgramsRoute: LayoutProgramsRouteWithChildren,
+  LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutTrajectoryRoute: LayoutTrajectoryRoute,
   LayoutIndexRoute: LayoutIndexRoute,
+  LayoutProgramsProgramIdRoute: LayoutProgramsProgramIdRoute,
 }
 
 const LayoutRouteWithChildren =
@@ -352,10 +434,10 @@ const LayoutRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   LayoutRoute: LayoutRouteWithChildren,
+  ApplyRoute: ApplyRoute,
   LoginRoute: LoginRoute,
   RecoverPasswordRoute: RecoverPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

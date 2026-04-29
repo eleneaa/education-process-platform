@@ -2,12 +2,13 @@ import logging
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from sqlmodel import select
 
 from app.crud import crud_admission_request
 from app.api.deps import SessionDep, CurrentUser
 from app.core.config import settings
+from app.core.rate_limiter import rate_limiter
 from app.models import (
     AdmissionRequest,
     AdmissionRequestCreate,
@@ -195,3 +196,29 @@ def delete_admission_request(
     )
 
     return {"ok": True}
+
+
+@router.post("/public/create", response_model=AdmissionRequest)
+@rate_limiter.limit(max_requests=5, window_seconds=3600)
+def create_admission_request_public(
+    request: Request,
+    *,
+    session: SessionDep,
+    admission_request_in: AdmissionRequestCreate,
+) -> Any:
+    """
+    Create admission request from public form (rate-limited: 5 per hour).
+    No authentication required. Source is automatically set to 'website'.
+    """
+
+    # Ensure source is set to website for public requests
+    admission_request_data = admission_request_in.model_dump()
+    admission_request_data["source"] = "website"
+    admission_request_create = AdmissionRequestCreate(**admission_request_data)
+
+    admission_request = crud_admission_request.create_admission_request(
+        session=session,
+        admission_request_create=admission_request_create,
+    )
+
+    return admission_request
