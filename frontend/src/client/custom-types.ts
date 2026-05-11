@@ -278,3 +278,11 @@ export type AdmissionRequestsResponse = {
   data: AdmissionRequest[]
   count: number
 }
+
+// ─── Import ───────────────────────────────────────────────────────────────────
+
+export type ImportResult = {
+  created: number
+  skipped: number
+  errors: string[]
+}

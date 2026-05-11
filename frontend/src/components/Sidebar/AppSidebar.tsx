@@ -21,7 +21,7 @@ import { User } from "./User"
 
 const adminItems: Item[] = [
   { icon: Home, title: "Дашборд", path: "/" },
-  { icon: Users, title: "Пользователи", path: "/admin" },
+  { icon: Users, title: "Пользователи", path: "/users" },
   { icon: ClipboardList, title: "Заявки", path: "/admission-requests" },
   { icon: BookOpen, title: "Программы", path: "/programs" },
   { icon: Compass, title: "Группы", path: "/groups" },

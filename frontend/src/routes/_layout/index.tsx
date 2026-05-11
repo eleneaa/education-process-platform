@@ -175,7 +175,7 @@ function AdminDashboard({ userId: _userId }: { userId: string }) {
           label="Всего студентов"
           value={uniqueStudents}
           variant="success"
-          onClick={() => navigate({ to: "/admin" })}
+          onClick={() => navigate({ to: "/users" })}
         />
         <MetricCard
           icon={BookOpen}

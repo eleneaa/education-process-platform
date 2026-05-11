@@ -10,6 +10,7 @@ import {
   Layers,
   Grid,
   List as ListIcon,
+  Upload,
 } from "lucide-react"
 import { useState } from "react"
 
@@ -21,6 +22,8 @@ import {
   getPrograms,
   updateModule,
   updateProgram,
+  importProgramsCSV,
+  importModulesCSV,
 } from "@/client/custom-api"
 import type { Module, Program } from "@/client/custom-types"
 import { Badge } from "@/components/ui/badge"
@@ -37,6 +40,7 @@ import {
 } from "@/components/ui/select"
 import { RightPanel } from "@/components/RightPanel"
 import { ExportPDFDialog, type ExportColumn } from "@/components/Common/ExportPDFDialog"
+import { ImportDialog } from "@/components/Common/ImportDialog"
 import useCustomToast from "@/hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/programs")({
@@ -618,6 +622,37 @@ function ProgramsPage() {
             </p>
           </div>
           <div className="flex gap-3 w-full sm:w-auto flex-col sm:flex-row">
+            <ImportDialog
+              trigger={<><Upload className="h-5 w-5" />Программы</>}
+              title="Импорт программ"
+              description="Загрузите CSV файл с программами"
+              templateColumns={["title", "description", "status"]}
+              templateColumnLabels={{
+                title: "Название",
+                description: "Описание",
+                status: "Статус (draft/on_review/approved/rejected)",
+              }}
+              templateFilename="programs_template.csv"
+              onImport={importProgramsCSV}
+              onSuccess={() => queryClient.invalidateQueries({ queryKey: ["programs"] })}
+            />
+            <ImportDialog
+              trigger={<><Upload className="h-5 w-5" />Модули</>}
+              title="Импорт модулей"
+              description="Загрузите CSV файл с модулями"
+              templateColumns={["title", "description", "program_title", "module_type", "position", "content"]}
+              templateColumnLabels={{
+                title: "Название модуля",
+                description: "Описание",
+                program_title: "Название программы",
+                module_type: "Тип (theoretical/practical/test)",
+                position: "Позиция (номер по порядку)",
+                content: "Содержание",
+              }}
+              templateFilename="modules_template.csv"
+              onImport={importModulesCSV}
+              onSuccess={() => queryClient.invalidateQueries({ queryKey: ["modules"] })}
+            />
             <Button
               variant="outline"
               onClick={() => setExportOpen(true)}

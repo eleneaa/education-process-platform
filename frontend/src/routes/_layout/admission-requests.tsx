@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { UsersService } from "@/client"
 import { createFileRoute } from "@tanstack/react-router"
-import { Check, ClipboardCopy, FileDown, Pencil, Plus, Search, UserPlus } from "lucide-react"
+import { Check, ClipboardCopy, FileDown, Pencil, Plus, Search, UserPlus, Upload } from "lucide-react"
 import { useState } from "react"
 
 import {
@@ -9,6 +9,7 @@ import {
   getAdmissionRequests,
   getUsers,
   updateAdmissionRequest,
+  importAdmissionRequestsCSV,
 } from "@/client/custom-api"
 import type { AdmissionRequest } from "@/client/custom-types"
 import type { UserPublic } from "@/client/types.gen"
@@ -40,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ExportPDFDialog, type ExportColumn } from "@/components/Common/ExportPDFDialog"
+import { ImportDialog } from "@/components/Common/ImportDialog"
 import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 
@@ -702,6 +704,27 @@ function AdmissionRequestsPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <ImportDialog
+              trigger={<><Upload className="h-4 w-4" />Импорт</>}
+              title="Импорт заявок"
+              description="Загрузите CSV файл с заявками"
+              templateColumns={["full_name", "phone_number", "email", "program_interest", "source", "comment", "is_for_child", "child_name", "guardian_name", "guardian_phone"]}
+              templateColumnLabels={{
+                full_name: "ФИО",
+                phone_number: "Телефон",
+                email: "Email",
+                program_interest: "Интересует программа",
+                source: "Источник (website/telegram/email/phone/offline)",
+                comment: "Комментарий",
+                is_for_child: "Для ребёнка (true/false)",
+                child_name: "Имя ребёнка",
+                guardian_name: "ФИО опекуна",
+                guardian_phone: "Телефон опекуна",
+              }}
+              templateFilename="admission_requests_template.csv"
+              onImport={importAdmissionRequestsCSV}
+              onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admission_requests"] })}
+            />
             <Button
               variant="outline"
               onClick={() => setExportOpen(true)}

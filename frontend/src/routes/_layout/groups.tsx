@@ -12,6 +12,7 @@ import {
   UserPlus,
   UserMinus,
   MessageSquare,
+  Upload,
 } from "lucide-react"
 import { useState } from "react"
 
@@ -26,6 +27,7 @@ import {
   getUsers,
   updateGroup,
   createRecommendation,
+  importGroupsCSV,
 } from "@/client/custom-api"
 import type { Group, Enrollment, Program } from "@/client/custom-types"
 import type { UserPublic } from "@/client/types.gen"
@@ -43,6 +45,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { RightPanel } from "@/components/RightPanel"
+import { ImportDialog } from "@/components/Common/ImportDialog"
 import useCustomToast from "@/hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/groups")({
@@ -563,14 +566,33 @@ function GroupsPage() {
               Всего групп: <span className="font-semibold text-foreground">{filteredGroups.length}</span>
             </p>
           </div>
-          <Button
-            onClick={handleCreateGroup}
-            size="lg"
-            className="gap-2 bg-primary hover:bg-primary/90 w-full sm:w-auto"
-          >
-            <Plus className="h-5 w-5" />
-            Создать группу
-          </Button>
+          <div className="flex gap-3 w-full sm:w-auto flex-col sm:flex-row">
+            <ImportDialog
+              trigger={<><Upload className="h-5 w-5" />Импорт</>}
+              title="Импорт групп"
+              description="Загрузите CSV файл с группами"
+              templateColumns={["name", "program_title", "teacher_email", "status", "start_date", "end_date"]}
+              templateColumnLabels={{
+                name: "Название группы",
+                program_title: "Название программы",
+                teacher_email: "Email учителя (опционально)",
+                status: "Статус (planned/active/finished/canceled)",
+                start_date: "Дата начала (YYYY-MM-DD)",
+                end_date: "Дата окончания (YYYY-MM-DD)",
+              }}
+              templateFilename="groups_template.csv"
+              onImport={importGroupsCSV}
+              onSuccess={() => queryClient.invalidateQueries({ queryKey: ["groups"] })}
+            />
+            <Button
+              onClick={handleCreateGroup}
+              size="lg"
+              className="gap-2 bg-primary hover:bg-primary/90 w-full sm:w-auto"
+            >
+              <Plus className="h-5 w-5" />
+              Создать группу
+            </Button>
+          </div>
         </div>
       </div>
 

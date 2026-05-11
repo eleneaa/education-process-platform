@@ -11,6 +11,7 @@ import type {
   EnrollmentsResponse,
   GroupProgress,
   GroupsResponse,
+  ImportResult,
   Leaderboard,
   ModulesResponse,
   ProgressesResponse,
@@ -377,3 +378,49 @@ export async function deleteRecommendation(id: string): Promise<void> {
   await api.delete(`/teacher-recommendations/${id}`)
 }
 
+// ─── Import ────────────────────────────────────────────────────────────────────
+
+export async function importUsersCSV(file: File): Promise<ImportResult> {
+  const formData = new FormData()
+  formData.append("file", file)
+  const { data } = await api.post<ImportResult>("/import/users", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })
+  return data
+}
+
+export async function importProgramsCSV(file: File): Promise<ImportResult> {
+  const formData = new FormData()
+  formData.append("file", file)
+  const { data } = await api.post<ImportResult>("/import/programs", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })
+  return data
+}
+
+export async function importGroupsCSV(file: File): Promise<ImportResult> {
+  const formData = new FormData()
+  formData.append("file", file)
+  const { data } = await api.post<ImportResult>("/import/groups", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })
+  return data
+}
+
+export async function importAdmissionRequestsCSV(file: File): Promise<ImportResult> {
+  const formData = new FormData()
+  formData.append("file", file)
+  const { data } = await api.post<ImportResult>("/import/admission-requests", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })
+  return data
+}
+
+export async function importModulesCSV(file: File): Promise<ImportResult> {
+  const formData = new FormData()
+  formData.append("file", file)
+  const { data } = await api.post<ImportResult>("/import/modules", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })
+  return data
+}
