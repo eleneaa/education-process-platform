@@ -789,7 +789,6 @@ function AdmissionRequestsPage() {
         title="Заявки на поступление"
         columns={ADMISSION_EXPORT_COLUMNS}
         data={filtered as unknown as Record<string, unknown>[]}
-        filename="admission-requests"
         exportType="admission-requests"
       />
     </div>

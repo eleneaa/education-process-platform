@@ -200,6 +200,7 @@ def test_group_progress_report(
         group_create=GroupCreate(
             name="Report Group",
             program_id=program.id,
+            status="active",
             start_date=datetime(2026, 1, 1),
             end_date=datetime(2026, 12, 31),
         ),

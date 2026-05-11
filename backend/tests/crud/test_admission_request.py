@@ -11,7 +11,7 @@ def test_create_admission_request(db: Session) -> None:
         phone_number="+79990001122",
         program_interest="Data Science",
         comment="Wants evening classes",
-        source="WEBSITE",
+        source="website",
     )
 
     admission_request = crud.create_admission_request(
@@ -35,7 +35,7 @@ def test_get_admission_request_by_id(db: Session) -> None:
         phone_number="+79991112233",
         program_interest="Python Developer",
         comment="Interested in online format",
-        source="WEBSITE",
+        source="website",
     )
 
     created_request = crud.create_admission_request(
@@ -60,7 +60,7 @@ def test_get_admission_requests(db: Session) -> None:
         phone_number="+79990000001",
         program_interest="Program 1",
         comment="First comment",
-        source="WEBSITE",
+        source="website",
     )
     request_2 = AdmissionRequestCreate(
         full_name="Second User",
@@ -68,7 +68,7 @@ def test_get_admission_requests(db: Session) -> None:
         phone_number="+79990000002",
         program_interest="Program 2",
         comment="Second comment",
-        source="EMAIL",
+        source="email",
     )
 
     crud.create_admission_request(session=db, admission_request_create=request_1)
@@ -86,7 +86,7 @@ def test_update_admission_request(db: Session) -> None:
         phone_number="+79995556677",
         program_interest="Analytics",
         comment="Initial comment",
-        source="PHONE",
+        source="phone",
     )
 
     created_request = crud.create_admission_request(
@@ -95,17 +95,17 @@ def test_update_admission_request(db: Session) -> None:
     )
 
     request_update = AdmissionRequestUpdate(
-        status="IN_REVIEW",
+        status="in_review",
         comment="Updated by admin",
     )
 
     updated_request = crud.update_admission_request(
         session=db,
         db_admission_request=created_request,
-        enrollment_request_in=request_update,
+        admission_request_in=request_update,
     )
 
-    assert updated_request.status.value == "IN_REVIEW"
+    assert updated_request.status.value == "in_review"
     assert updated_request.comment == "Updated by admin"
 
 
@@ -116,7 +116,7 @@ def test_delete_admission_request(db: Session) -> None:
         phone_number="+79998887766",
         program_interest="Testing",
         comment="To be deleted",
-        source="TELEGRAM",
+        source="telegram",
     )
 
     created_request = crud.create_admission_request(

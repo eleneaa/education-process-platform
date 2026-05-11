@@ -863,7 +863,6 @@ function ProgramsPage() {
         title="Программы обучения"
         columns={PROGRAM_EXPORT_COLUMNS}
         data={filteredPrograms as unknown as Record<string, unknown>[]}
-        filename="programs"
         exportType="programs"
       />
     </div>

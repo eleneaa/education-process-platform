@@ -296,6 +296,7 @@ def test_group_leaderboard(
         group_create=GroupCreate(
             name="Leaderboard Group",
             program_id=program.id,
+            status="active",
             start_date=datetime(2026, 1, 1),
             end_date=datetime(2026, 12, 31),
         ),

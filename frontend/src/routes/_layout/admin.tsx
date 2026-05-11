@@ -189,7 +189,6 @@ function Admin() {
           ...u,
           role: u.is_superuser ? "SUPERUSER" : (u.role ?? "STUDENT"),
         })) as unknown as Record<string, unknown>[]}
-        filename="users"
         exportType="users"
       />
     </div>
