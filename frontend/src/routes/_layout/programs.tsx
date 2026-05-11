@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   BookOpen,
+  FileDown,
   Pencil,
   Plus,
   Search,
@@ -35,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { RightPanel } from "@/components/RightPanel"
+import { ExportPDFDialog, type ExportColumn } from "@/components/Common/ExportPDFDialog"
 import useCustomToast from "@/hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/programs")({
@@ -57,6 +59,28 @@ const statusColor: Record<string, "default" | "secondary" | "destructive" | "out
   approved: "default",
   rejected: "destructive",
 }
+
+const PROGRAM_EXPORT_COLUMNS: ExportColumn[] = [
+  { key: "title", label: "Название", defaultEnabled: true },
+  {
+    key: "description",
+    label: "Описание",
+    defaultEnabled: true,
+    format: (v) => (v ? String(v).slice(0, 120) : "—"),
+  },
+  {
+    key: "status",
+    label: "Статус",
+    defaultEnabled: true,
+    format: (v) => STATUS_LABELS[String(v)] ?? "—",
+  },
+  {
+    key: "created_at",
+    label: "Дата создания",
+    defaultEnabled: true,
+    format: (v) => (v ? new Date(String(v)).toLocaleDateString("ru-RU") : "—"),
+  },
+]
 
 // ─── Program Form ────────────────────────────────────────────────────────────
 
@@ -441,6 +465,7 @@ function ProgramsPage() {
   const [view, setView] = useState<"grid" | "list">("grid")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<"name" | "date">("date")
+  const [exportOpen, setExportOpen] = useState(false)
 
   // Program form state
   const [programFormOpen, setProgramFormOpen] = useState(false)
@@ -592,14 +617,25 @@ function ProgramsPage() {
               Всего программ: <span className="font-semibold text-foreground">{filteredPrograms.length}</span>
             </p>
           </div>
-          <Button
-            onClick={handleCreateProgram}
-            size="lg"
-            className="gap-2 bg-primary hover:bg-primary/90 w-full sm:w-auto"
-          >
-            <Plus className="h-5 w-5" />
-            Создать программу
-          </Button>
+          <div className="flex gap-3 w-full sm:w-auto flex-col sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setExportOpen(true)}
+              size="lg"
+              className="gap-2 w-full sm:w-auto"
+            >
+              <FileDown className="h-5 w-5" />
+              Экспорт PDF
+            </Button>
+            <Button
+              onClick={handleCreateProgram}
+              size="lg"
+              className="gap-2 bg-primary hover:bg-primary/90 w-full sm:w-auto"
+            >
+              <Plus className="h-5 w-5" />
+              Создать программу
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -820,6 +856,16 @@ function ProgramsPage() {
           />
         )}
       </RightPanel>
+
+      <ExportPDFDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        title="Программы обучения"
+        columns={PROGRAM_EXPORT_COLUMNS}
+        data={filteredPrograms as unknown as Record<string, unknown>[]}
+        filename="programs"
+        exportType="programs"
+      />
     </div>
   )
 }

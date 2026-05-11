@@ -45,19 +45,14 @@ function ApplyPage() {
         guardian_phone: isForChild ? guardianPhone.trim() || null : null,
       }
 
-      console.log("Отправляю:", payload)
-
-      const res = await fetch("/api/v1/admission-requests/public/create", {
+      const res = await fetch("/api/v1/admission-requests/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
 
-      console.log("Статус ответа:", res.status)
-
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        console.log("Ошибка:", data)
         if (res.status === 429) {
           throw new Error("Вы отправили слишком много заявок. Попробуйте позже.")
         }

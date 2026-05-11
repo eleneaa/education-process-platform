@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { UsersService } from "@/client"
 import { createFileRoute } from "@tanstack/react-router"
-import { Check, ClipboardCopy, Pencil, Plus, Search, UserPlus } from "lucide-react"
+import { Check, ClipboardCopy, FileDown, Pencil, Plus, Search, UserPlus } from "lucide-react"
 import { useState } from "react"
 
 import {
@@ -39,6 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { ExportPDFDialog, type ExportColumn } from "@/components/Common/ExportPDFDialog"
 import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 
@@ -63,6 +64,42 @@ const SOURCE_LABELS: Record<string, string> = {
   phone: "Телефон",
   offline: "Офлайн",
 }
+
+const ADMISSION_EXPORT_COLUMNS: ExportColumn[] = [
+  { key: "full_name", label: "ФИО", defaultEnabled: true },
+  { key: "email", label: "Email", defaultEnabled: true, format: (v) => (v ? String(v) : "—") },
+  { key: "phone_number", label: "Телефон", defaultEnabled: true },
+  {
+    key: "source",
+    label: "Источник",
+    defaultEnabled: true,
+    format: (v) => SOURCE_LABELS[String(v)] ?? "—",
+  },
+  {
+    key: "status",
+    label: "Статус",
+    defaultEnabled: true,
+    format: (v) => STATUS_LABELS[String(v)] ?? "—",
+  },
+  {
+    key: "assigned_to_name",
+    label: "Ответственный",
+    defaultEnabled: true,
+    format: (v) => (v ? String(v) : "—"),
+  },
+  {
+    key: "program_interest",
+    label: "Интерес к программе",
+    defaultEnabled: false,
+    format: (v) => (v ? String(v) : "—"),
+  },
+  {
+    key: "created_at",
+    label: "Дата заявки",
+    defaultEnabled: true,
+    format: (v) => (v ? new Date(String(v)).toLocaleDateString("ru-RU") : "—"),
+  },
+]
 
 function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "new") return "secondary"
@@ -596,6 +633,7 @@ function RequestRow({
 function AdmissionRequestsPage() {
   const { user } = useAuth()
   const [createOpen, setCreateOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState("all")
   const [search, setSearch] = useState("")
 
@@ -663,12 +701,22 @@ function AdmissionRequestsPage() {
               Управление и рассмотрение заявок
             </p>
           </div>
-          {canManage && (
-            <Button onClick={() => setCreateOpen(true)} className="gap-2 bg-primary hover:bg-primary/90">
-              <Plus className="h-4 w-4" />
-              Добавить заявку
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setExportOpen(true)}
+              className="gap-2"
+            >
+              <FileDown className="h-4 w-4" />
+              Экспорт PDF
             </Button>
-          )}
+            {canManage && (
+              <Button onClick={() => setCreateOpen(true)} className="gap-2 bg-primary hover:bg-primary/90">
+                <Plus className="h-4 w-4" />
+                Добавить заявку
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -734,6 +782,16 @@ function AdmissionRequestsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <ExportPDFDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        title="Заявки на поступление"
+        columns={ADMISSION_EXPORT_COLUMNS}
+        data={filtered as unknown as Record<string, unknown>[]}
+        filename="admission-requests"
+        exportType="admission-requests"
+      />
     </div>
   )
 }

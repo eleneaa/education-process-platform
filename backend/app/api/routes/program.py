@@ -4,7 +4,8 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException
 
 from app.crud import crud_program
-from app.api.deps import SessionDep, CurrentUser, CurrentTeacherOrAdmin
+from app.api.deps import SessionDep, CurrentUser, CurrentAdmin, OptionalCurrentUser
+from app.models.enums import ProgramStatus
 
 from app.models import ProgramsPublic, Program, ProgramCreate, ProgramUpdate
 
@@ -17,12 +18,12 @@ router = APIRouter(
 @router.get("/", response_model=ProgramsPublic)
 def read_programs(
     session: SessionDep,
-    current_user: CurrentUser,
+    current_user: OptionalCurrentUser = None,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
     """
-    Retrieve programs.
+    Retrieve programs. For unauthenticated users, only approved programs are shown.
     """
 
     programs = crud_program.get_programs(
@@ -31,7 +32,11 @@ def read_programs(
         limit=limit,
     )
 
-    count = crud_program.get_programs_count(session=session)
+    # Filter to approved programs for unauthenticated users
+    if not current_user:
+        programs = [p for p in programs if p.status == ProgramStatus.APPROVED]
+
+    count = len(programs) if not current_user else crud_program.get_programs_count(session=session)
 
     return ProgramsPublic(
         data=programs,
@@ -43,10 +48,10 @@ def read_programs(
 def read_program(
     program_id: UUID,
     session: SessionDep,
-    current_user: CurrentUser,
+    current_user: OptionalCurrentUser = None,
 ) -> Any:
     """
-    Get program by id.
+    Get program by id. For unauthenticated users, only approved programs are accessible.
     """
 
     program = crud_program.get_program_by_id(
@@ -60,6 +65,13 @@ def read_program(
             detail="Program not found",
         )
 
+    # Restrict access for unauthenticated users
+    if not current_user and program.status != ProgramStatus.APPROVED:
+        raise HTTPException(
+            status_code=403,
+            detail="This program is not available for public access",
+        )
+
     return program
 
 
@@ -68,10 +80,10 @@ def create_program(
     *,
     session: SessionDep,
     program_in: ProgramCreate,
-    current_user: CurrentTeacherOrAdmin,
+    current_user: CurrentAdmin,
 ) -> Any:
     """
-    Create new program.
+    Create new program (admin only).
     """
 
     program = crud_program.create_program(
@@ -89,10 +101,10 @@ def update_program(
     session: SessionDep,
     program_id: UUID,
     program_in: ProgramUpdate,
-    current_user: CurrentTeacherOrAdmin,
+    current_user: CurrentAdmin,
 ) -> Any:
     """
-    Update program.
+    Update program (admin only).
     """
 
     program = crud_program.get_program_by_id(
@@ -120,10 +132,10 @@ def delete_program(
     *,
     session: SessionDep,
     program_id: UUID,
-    current_user: CurrentTeacherOrAdmin,
+    current_user: CurrentAdmin,
 ) -> Any:
     """
-    Delete program.
+    Delete program (admin only).
     """
 
     program = crud_program.get_program_by_id(
