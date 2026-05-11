@@ -1,21 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { UsersService } from "@/client"
 import { createFileRoute } from "@tanstack/react-router"
-import { Check, ClipboardCopy, FileDown, Pencil, Plus, Search, UserPlus, Upload } from "lucide-react"
-import { useState } from "react"
+import { FileDown, Plus, Search, Upload, MoreVertical } from "lucide-react"
+import { useState, useMemo } from "react"
 
 import {
   createAdmissionRequest,
   getAdmissionRequests,
-  getUsers,
   updateAdmissionRequest,
   importAdmissionRequestsCSV,
 } from "@/client/custom-api"
 import type { AdmissionRequest } from "@/client/custom-types"
-import type { UserPublic } from "@/client/types.gen"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -32,17 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { ExportPDFDialog, type ExportColumn } from "@/components/Common/ExportPDFDialog"
 import { ImportDialog } from "@/components/Common/ImportDialog"
-import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/admission-requests")({
@@ -53,8 +41,8 @@ export const Route = createFileRoute("/_layout/admission-requests")({
 })
 
 const STATUS_LABELS: Record<string, string> = {
-  new: "Новая",
-  in_review: "В рассмотрении",
+  new: "Новые",
+  in_review: "На проверке",
   approved: "Одобрена",
   rejected: "Отклонена",
 }
@@ -84,18 +72,6 @@ const ADMISSION_EXPORT_COLUMNS: ExportColumn[] = [
     format: (v) => STATUS_LABELS[String(v)] ?? "—",
   },
   {
-    key: "assigned_to_name",
-    label: "Ответственный",
-    defaultEnabled: true,
-    format: (v) => (v ? String(v) : "—"),
-  },
-  {
-    key: "program_interest",
-    label: "Интерес к программе",
-    defaultEnabled: false,
-    format: (v) => (v ? String(v) : "—"),
-  },
-  {
     key: "created_at",
     label: "Дата заявки",
     defaultEnabled: true,
@@ -103,29 +79,14 @@ const ADMISSION_EXPORT_COLUMNS: ExportColumn[] = [
   },
 ]
 
-function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
-  if (s === "new") return "secondary"
-  if (s === "in_review") return "default"
-  if (s === "approved") return "outline"
-  if (s === "rejected") return "destructive"
-  return "secondary"
-}
-
-function generatePassword(length = 10): string {
-  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
-  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("")
-}
-
 // ─── Create Request Dialog ────────────────────────────────────────────────────
 
 function CreateRequestDialog({
   open,
   onOpenChange,
-  managers,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
-  managers: UserPublic[]
 }) {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
@@ -133,31 +94,21 @@ function CreateRequestDialog({
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [programInterest, setProgramInterest] = useState("")
-  const [comment, setComment] = useState("")
   const [source, setSource] = useState("website")
-  const [assignedToId, setAssignedToId] = useState("")
-  const [isForChild, setIsForChild] = useState(false)
-  const [childName, setChildName] = useState("")
-  const [guardianName, setGuardianName] = useState("")
-  const [guardianPhone, setGuardianPhone] = useState("")
 
   const mutation = useMutation({
-    mutationFn: async (body: Parameters<typeof createAdmissionRequest>[0]) => {
-      const req = await createAdmissionRequest(body)
-      if (assignedToId) {
-        await updateAdmissionRequest(req.id, { assigned_to_id: assignedToId, status: "in_review" })
-      }
-      return req
-    },
+    mutationFn: createAdmissionRequest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admission-requests"] })
       showSuccessToast("Заявка создана")
       onOpenChange(false)
-      setFullName(""); setEmail(""); setPhone(""); setProgramInterest(""); setComment("")
-      setSource("website"); setAssignedToId("")
-      setIsForChild(false); setChildName(""); setGuardianName(""); setGuardianPhone("")
+      setFullName("")
+      setEmail("")
+      setPhone("")
+      setProgramInterest("")
+      setSource("website")
     },
-    onError: () => showErrorToast("Не удалось создать заявку"),
+    onError: () => showErrorToast("Ошибка при создании заявки"),
   })
 
   function handleSubmit(e: React.FormEvent) {
@@ -168,100 +119,89 @@ function CreateRequestDialog({
       email: email.trim() || null,
       phone_number: phone.trim(),
       program_interest: programInterest.trim() || null,
-      comment: comment.trim() || null,
       source,
-      is_for_child: isForChild,
-      child_name: isForChild ? childName.trim() || null : null,
-      guardian_name: isForChild ? guardianName.trim() || null : null,
-      guardian_phone: isForChild ? guardianPhone.trim() || null : null,
     })
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader><DialogTitle>Новая заявка</DialogTitle></DialogHeader>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Новая заявка</DialogTitle>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 space-y-1.5">
-              <Label>ФИО *</Label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Иванов Иван Иванович" required />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Email</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Телефон *</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 (999) 000-00-00" required />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Источник</Label>
-              <Select value={source} onValueChange={setSource}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(SOURCE_LABELS).map(([v, l]) => (
-                    <SelectItem key={v} value={v}>{l}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Ответственный</Label>
-              <Select value={assignedToId} onValueChange={setAssignedToId}>
-                <SelectTrigger><SelectValue placeholder="Не назначен" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">— Не назначен —</SelectItem>
-                  {managers.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>{u.full_name || u.email}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="col-span-2 space-y-1.5">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={isForChild}
-                  onChange={(e) => setIsForChild(e.target.checked)}
-                  className="h-4 w-4"
-                />
-                <span className="text-sm">Заявка для ребенка</span>
-              </label>
-            </div>
-            {isForChild && (
-              <>
-                <div className="col-span-2 space-y-1.5">
-                  <Label>Имя ребенка</Label>
-                  <Input value={childName} onChange={(e) => setChildName(e.target.value)} placeholder="Имя ребенка" />
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <Label>Имя опекуна</Label>
-                  <Input value={guardianName} onChange={(e) => setGuardianName(e.target.value)} placeholder="ФИО опекуна" />
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <Label>Телефон опекуна</Label>
-                  <Input value={guardianPhone} onChange={(e) => setGuardianPhone(e.target.value)} placeholder="+7 (999) 000-00-00" />
-                </div>
-              </>
-            )}
-            <div className="col-span-2 space-y-1.5">
-              <Label>Интерес к программе</Label>
-              <Input value={programInterest} onChange={(e) => setProgramInterest(e.target.value)} placeholder="Название программы" />
-            </div>
-            <div className="col-span-2 space-y-1.5">
-              <Label>Комментарий</Label>
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Дополнительные заметки..."
-                rows={2}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
-              />
-            </div>
+          <div>
+            <Label htmlFor="name" className="text-sm font-medium">
+              ФИО *
+            </Label>
+            <Input
+              id="name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Иванов Иван"
+              className="mt-1"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="phone" className="text-sm font-medium">
+              Телефон *
+            </Label>
+            <Input
+              id="phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+7 (999) 000-00-00"
+              className="mt-1"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="email" className="text-sm font-medium">
+              Email
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@mail.com"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="program" className="text-sm font-medium">
+              Интерес к программе
+            </Label>
+            <Input
+              id="program"
+              value={programInterest}
+              onChange={(e) => setProgramInterest(e.target.value)}
+              placeholder="Название программы"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="source" className="text-sm font-medium">
+              Источник
+            </Label>
+            <Select value={source} onValueChange={setSource}>
+              <SelectTrigger id="source" className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="website">Сайт</SelectItem>
+                <SelectItem value="telegram">Telegram</SelectItem>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="phone">Телефон</SelectItem>
+                <SelectItem value="offline">Офлайн</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Отмена</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Отмена
+            </Button>
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? "Создание..." : "Создать"}
             </Button>
@@ -272,546 +212,285 @@ function CreateRequestDialog({
   )
 }
 
-// ─── Edit Request Dialog ──────────────────────────────────────────────────────
+// ─── Kanban Column ────────────────────────────────────────────────────────────
 
-function EditRequestDialog({
-  open,
-  onOpenChange,
-  request,
-}: {
-  open: boolean
-  onOpenChange: (v: boolean) => void
-  request: AdmissionRequest
-}) {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [fullName, setFullName] = useState(request.full_name)
-  const [email, setEmail] = useState(request.email ?? "")
-  const [phone, setPhone] = useState(request.phone_number)
-  const [programInterest, setProgramInterest] = useState(request.program_interest ?? "")
-  const [comment, setComment] = useState(request.comment ?? "")
-  const [source, setSource] = useState(request.source)
-  const [isForChild, setIsForChild] = useState(request.is_for_child ?? false)
-  const [childName, setChildName] = useState(request.child_name ?? "")
-  const [guardianName, setGuardianName] = useState(request.guardian_name ?? "")
-  const [guardianPhone, setGuardianPhone] = useState(request.guardian_phone ?? "")
+interface KanbanColumnProps {
+  status: string
+  title: string
+  index: number
+  requests: AdmissionRequest[]
+  onStatusChange: (requestId: string, newStatus: string) => void
+}
 
-  const mutation = useMutation({
-    mutationFn: () =>
-      updateAdmissionRequest(request.id, {
-        full_name: fullName.trim(),
-        email: email.trim() || null,
-        phone_number: phone.trim(),
-        program_interest: programInterest.trim() || null,
-        comment: comment.trim() || null,
-        source,
-        is_for_child: isForChild,
-        child_name: isForChild ? childName.trim() || null : null,
-        guardian_name: isForChild ? guardianName.trim() || null : null,
-        guardian_phone: isForChild ? guardianPhone.trim() || null : null,
-      } as Parameters<typeof updateAdmissionRequest>[1]),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admission-requests"] })
-      showSuccessToast("Заявка обновлена")
-      onOpenChange(false)
-    },
-    onError: () => showErrorToast("Не удалось сохранить"),
-  })
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!fullName.trim() || !phone.trim()) return
-    mutation.mutate()
-  }
-
+function KanbanColumn({ status, title, index, requests, onStatusChange }: KanbanColumnProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader><DialogTitle>Редактировать заявку</DialogTitle></DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 space-y-1.5">
-              <Label>ФИО *</Label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Email</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Телефон *</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Источник</Label>
-              <Select value={source} onValueChange={setSource}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(SOURCE_LABELS).map(([v, l]) => (
-                    <SelectItem key={v} value={v}>{l}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="col-span-2 space-y-1.5">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={isForChild}
-                  onChange={(e) => setIsForChild(e.target.checked)}
-                  className="h-4 w-4"
-                />
-                <span className="text-sm">Заявка для ребенка</span>
-              </label>
-            </div>
-            {isForChild && (
-              <>
-                <div className="col-span-2 space-y-1.5">
-                  <Label>Имя ребенка</Label>
-                  <Input value={childName} onChange={(e) => setChildName(e.target.value)} />
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <Label>Имя опекуна</Label>
-                  <Input value={guardianName} onChange={(e) => setGuardianName(e.target.value)} />
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <Label>Телефон опекуна</Label>
-                  <Input value={guardianPhone} onChange={(e) => setGuardianPhone(e.target.value)} />
-                </div>
-              </>
-            )}
-            <div className="col-span-2 space-y-1.5">
-              <Label>Интерес к программе</Label>
-              <Input value={programInterest} onChange={(e) => setProgramInterest(e.target.value)} />
-            </div>
-            <div className="col-span-2 space-y-1.5">
-              <Label>Комментарий</Label>
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={2}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Отмена</Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Сохранение..." : "Сохранить"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <div className="flex flex-col flex-1 min-w-80">
+      {/* Column Header */}
+      <div className="flex items-center gap-3 pb-4 mb-4 border-b border-hair">
+        <span className="label-sm text-mute">0{index + 1} ЭТАП</span>
+        <h3 className="heading-sm text-fg flex-1">{title}</h3>
+        <span className="mono text-sm font-medium text-accent">{requests.length}</span>
+      </div>
+
+      {/* Cards */}
+      <div className="flex flex-col gap-3 flex-1">
+        {requests.map((req) => (
+          <AdmissionCard key={req.id} request={req} onStatusChange={onStatusChange} />
+        ))}
+        {requests.length === 0 && <div className="text-center py-8 text-mute text-sm">Нет заявок</div>}
+      </div>
+    </div>
   )
 }
 
-// ─── Create Account Dialog ────────────────────────────────────────────────────
+// ─── Admission Card ───────────────────────────────────────────────────────────
 
-function CreateAccountDialog({
-  open,
-  onOpenChange,
-  request,
-}: {
-  open: boolean
-  onOpenChange: (v: boolean) => void
+interface AdmissionCardProps {
   request: AdmissionRequest
-}) {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [password] = useState(() => generatePassword())
-  const [copied, setCopied] = useState(false)
-  const [created, setCreated] = useState(false)
-
-  const message = `Здравствуйте, ${request.full_name}!
-
-Ваша заявка одобрена. Для вас создан личный кабинет на нашей платформе.
-
-Данные для входа:
-🔗 Ссылка: ${window.location.origin}
-📧 Email: ${request.email ?? "—"}
-🔑 Пароль: ${password}
-
-Рекомендуем сменить пароль после первого входа.`
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      UsersService.createUser({
-        requestBody: {
-          email: request.email!,
-          full_name: request.full_name,
-          password,
-          is_active: true,
-          is_superuser: false,
-        },
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
-      setCreated(true)
-      showSuccessToast("Аккаунт создан")
-    },
-    onError: () => showErrorToast("Не удалось создать аккаунт"),
-  })
-
-  function handleCopy() {
-    navigator.clipboard.writeText(message)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader><DialogTitle>Создать аккаунт — {request.full_name}</DialogTitle></DialogHeader>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div><span className="text-muted-foreground">Email:</span> <span className="font-medium">{request.email ?? "—"}</span></div>
-            <div><span className="text-muted-foreground">Пароль:</span> <span className="font-mono font-medium">{password}</span></div>
-          </div>
-
-          {!request.email && (
-            <p className="text-sm text-destructive">У заявки нет email — аккаунт создать нельзя.</p>
-          )}
-
-          <div className="rounded-md bg-muted p-3">
-            <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Скриптовое сообщение</p>
-            <pre className="text-sm whitespace-pre-wrap font-sans">{message}</pre>
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={handleCopy}
-            >
-              {copied ? <Check className="h-4 w-4 mr-2 text-green-500" /> : <ClipboardCopy className="h-4 w-4 mr-2" />}
-              {copied ? "Скопировано!" : "Скопировать сообщение"}
-            </Button>
-            {request.email && !created && (
-              <Button
-                className="flex-1"
-                onClick={() => mutation.mutate()}
-                disabled={mutation.isPending}
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                {mutation.isPending ? "Создание..." : "Создать аккаунт"}
-              </Button>
-            )}
-            {created && (
-              <Button variant="outline" className="flex-1" disabled>
-                <Check className="h-4 w-4 mr-2 text-green-500" />
-                Аккаунт создан
-              </Button>
-            )}
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Закрыть</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
+  onStatusChange: (requestId: string, newStatus: string) => void
 }
 
-// ─── Row actions ──────────────────────────────────────────────────────────────
+function AdmissionCard({ request, onStatusChange }: AdmissionCardProps) {
+  const [open, setOpen] = useState(false)
+  const [newStatus, setNewStatus] = useState(request.status)
 
-function RequestRow({
-  req,
-  managers,
-  canManage,
-}: {
-  req: AdmissionRequest
-  managers: UserPublic[]
-  canManage: boolean
-}) {
-  const queryClient = useQueryClient()
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [accountOpen, setAccountOpen] = useState(false)
-  const [editOpen, setEditOpen] = useState(false)
+  const handleStatusChange = () => {
+    if (newStatus !== request.status) {
+      onStatusChange(request.id, newStatus)
+    }
+    setOpen(false)
+  }
 
-  const updateMutation = useMutation({
-    mutationFn: (body: { status?: string; assigned_to_id?: string | null }) =>
-      updateAdmissionRequest(req.id, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admission-requests"] })
-      showSuccessToast("Заявка обновлена")
-    },
-    onError: () => showErrorToast("Ошибка обновления"),
-  })
+  const createdDate = request.created_at
+    ? new Date(request.created_at).toLocaleDateString("ru-RU", {
+        month: "short",
+        day: "numeric",
+      })
+    : "—"
 
   return (
-    <>
-      {accountOpen && (
-        <CreateAccountDialog open={accountOpen} onOpenChange={setAccountOpen} request={req} />
-      )}
-      {editOpen && (
-        <EditRequestDialog open={editOpen} onOpenChange={setEditOpen} request={req} />
-      )}
-      <TableRow>
-        <TableCell className="font-medium">
-          <div>{req.full_name}</div>
-          {req.is_for_child && req.child_name && (
-            <div className="text-xs text-muted-foreground">👶 {req.child_name}</div>
-          )}
-        </TableCell>
-        <TableCell className="text-sm text-muted-foreground">{req.email ?? "—"}</TableCell>
-        <TableCell className="text-sm text-muted-foreground">
-          <div>{req.phone_number}</div>
-          {req.is_for_child && req.guardian_phone && (
-            <div className="text-xs text-muted-foreground">Опекун: {req.guardian_phone}</div>
-          )}
-        </TableCell>
-        <TableCell className="text-sm text-muted-foreground">
-          {SOURCE_LABELS[req.source] ?? req.source}
-        </TableCell>
-        {/* Ответственный — inline select для менеджеров */}
-        <TableCell>
-          {canManage ? (
-            <Select
-              value={req.assigned_to_id ?? "_none"}
-              onValueChange={(v) =>
-                updateMutation.mutate({ assigned_to_id: v === "_none" ? null : v })
-              }
-            >
-              <SelectTrigger className="h-7 w-40 text-xs">
-                <SelectValue placeholder="Не назначен" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_none">— Не назначен —</SelectItem>
-                {managers.map((u) => (
-                  <SelectItem key={u.id} value={u.id} className="text-xs">
-                    {u.full_name || u.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <span className="text-sm text-muted-foreground">{req.assigned_to_name ?? "—"}</span>
-          )}
-        </TableCell>
-        <TableCell className="text-sm text-muted-foreground">
-          {req.created_at ? new Date(req.created_at).toLocaleDateString("ru-RU") : "—"}
-        </TableCell>
-        <TableCell>
-          {canManage ? (
-            <Select
-              value={req.status}
-              onValueChange={(v) => updateMutation.mutate({ status: v })}
-            >
-              <SelectTrigger className="h-7 w-36 text-xs">
+    <Card className="border-hair rounded-2xl p-4 flex flex-col gap-3 hover:shadow-sm transition-shadow">
+      {/* Header: ID + Date */}
+      <div className="flex items-start justify-between gap-2">
+        <span className="mono text-xs text-mute">#{request.id.slice(0, 8)}</span>
+        <span className="mono text-xs text-mute">{createdDate}</span>
+      </div>
+
+      {/* Name */}
+      <div>
+        <p className="body-sm text-fg font-medium truncate">{request.full_name}</p>
+      </div>
+
+      {/* Program Interest */}
+      {request.program_interest && <p className="body-xs text-mute line-clamp-1">{request.program_interest}</p>}
+
+      {/* Footer: Source */}
+      <div className="flex items-center justify-between pt-2 border-t border-hair">
+        <span className="label-sm text-mute">{SOURCE_LABELS[request.source] || request.source}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen(true)}
+          className="h-6 w-6 p-0"
+        >
+          <MoreVertical className="w-4 h-4 text-mute" />
+        </Button>
+      </div>
+
+      {/* Status Change Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Изменить статус</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-mute">{request.full_name}</p>
+            <Select value={newStatus} onValueChange={setNewStatus}>
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(STATUS_LABELS).map(([v, l]) => (
-                  <SelectItem key={v} value={v} className="text-xs">{l}</SelectItem>
-                ))}
+                <SelectItem value="new">Новые</SelectItem>
+                <SelectItem value="in_review">На проверке</SelectItem>
+                <SelectItem value="approved">Одобрена</SelectItem>
+                <SelectItem value="rejected">Отклонена</SelectItem>
               </SelectContent>
             </Select>
-          ) : (
-            <Badge variant={statusVariant(req.status)}>{STATUS_LABELS[req.status] ?? req.status}</Badge>
-          )}
-        </TableCell>
-        {canManage && (
-          <TableCell>
-            <div className="flex gap-1.5">
-              <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => setEditOpen(true)}>
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-              {req.status === "approved" && (
-                <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => setAccountOpen(true)}>
-                  <UserPlus className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
-          </TableCell>
-        )}
-      </TableRow>
-    </>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleStatusChange}>Применить</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
   )
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 function AdmissionRequestsPage() {
-  const { user } = useAuth()
-  const [createOpen, setCreateOpen] = useState(false)
-  const [exportOpen, setExportOpen] = useState(false)
-  const [statusFilter, setStatusFilter] = useState("all")
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState("")
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
 
-  const { data: allRequests, isError } = useQuery({
+  const { data: requestsResponse } = useQuery({
     queryKey: ["admission-requests"],
-    queryFn: () => getAdmissionRequests(),
-    placeholderData: { data: [], count: 0 },
+    queryFn: getAdmissionRequests,
   })
 
-  const { data: usersData } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => getUsers(),
-    placeholderData: { data: [] as UserPublic[], count: 0 },
+  const requests = requestsResponse?.data ?? []
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      updateAdmissionRequest(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admission-requests"] })
+      showSuccessToast("Статус изменён")
+    },
+    onError: () => showErrorToast("Ошибка при изменении статуса"),
   })
 
-  const role = (user?.role ?? "student").toLowerCase()
-  const canManage = user?.is_superuser || role === "admin" || role === "teacher"
-
-  const managers = (usersData?.data ?? []).filter(
-    (u) => u.is_superuser || u.role === "ADMIN" || u.role === "TEACHER",
-  )
-
-  if (isError) return <p className="text-destructive">Ошибка загрузки заявок</p>
-
-  const allList = allRequests?.data ?? []
-  const filtered = allList.filter((r) => {
+  // Filter by search
+  const filteredRequests = useMemo(() => {
+    if (!search) return requests
     const q = search.toLowerCase()
-    const matchesSearch =
-      !q ||
-      r.full_name.toLowerCase().includes(q) ||
-      (r.email ?? "").toLowerCase().includes(q) ||
-      r.phone_number.includes(q)
-    const matchesStatus = statusFilter === "all" || r.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+    return requests.filter(
+      (r) =>
+        r.full_name.toLowerCase().includes(q) ||
+        r.email?.toLowerCase().includes(q) ||
+        r.phone_number.toLowerCase().includes(q) ||
+        r.program_interest?.toLowerCase().includes(q)
+    )
+  }, [search, requests])
 
-  const counts = {
-    all: allList.length,
-    new: allList.filter((r) => r.status === "new").length,
-    in_review: allList.filter((r) => r.status === "in_review").length,
-    approved: allList.filter((r) => r.status === "approved").length,
-    rejected: allList.filter((r) => r.status === "rejected").length,
+  // Group by status
+  const requestsByStatus = useMemo(() => {
+    return {
+      new: filteredRequests.filter((r) => r.status === "new"),
+      in_review: filteredRequests.filter((r) => r.status === "in_review"),
+      approved: filteredRequests.filter((r) => r.status === "approved"),
+      rejected: filteredRequests.filter((r) => r.status === "rejected"),
+    }
+  }, [filteredRequests])
+
+  const handleStatusChange = (requestId: string, newStatus: string) => {
+    updateStatusMutation.mutate({ id: requestId, status: newStatus })
   }
 
-  const STATUS_FILTERS = [
-    { value: "all", label: "Все", count: counts.all },
-    { value: "new", label: "Новые", count: counts.new },
-    { value: "in_review", label: "В рассмотрении", count: counts.in_review },
-    { value: "approved", label: "Одобрены", count: counts.approved },
-    { value: "rejected", label: "Отклонены", count: counts.rejected },
-  ]
-
   return (
-    <div className="space-y-8">
-      <CreateRequestDialog open={createOpen} onOpenChange={setCreateOpen} managers={managers} />
-
-      {/* Header Section */}
-      <div className="rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              Заявки на поступление
-            </h1>
-            <p className="text-muted-foreground mt-3">
-              Управление и рассмотрение заявок
-            </p>
+    <div className="min-h-screen bg-background">
+      {/* Topbar */}
+      <div className="divider-h border-b sticky top-0 bg-background z-40">
+        <div className="flex items-center justify-between px-10 py-5 gap-4">
+          <div className="flex items-center gap-3 flex-1 max-w-sm">
+            <Search className="w-4 h-4 text-mute" />
+            <Input
+              placeholder="Поиск по ФИО, телефону, программе..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="border-0 bg-transparent text-sm placeholder:text-mute focus:ring-0"
+            />
           </div>
           <div className="flex items-center gap-3">
             <ImportDialog
-              trigger={<><Upload className="h-4 w-4" />Импорт</>}
+              trigger={
+                <>
+                  <Upload className="w-4 h-4" />
+                  Импорт
+                </>
+              }
               title="Импорт заявок"
               description="Загрузите CSV файл с заявками"
-              templateColumns={["full_name", "phone_number", "email", "program_interest", "source", "comment", "is_for_child", "child_name", "guardian_name", "guardian_phone"]}
+              templateColumns={["full_name", "phone_number", "email", "program_interest", "source"]}
               templateColumnLabels={{
                 full_name: "ФИО",
                 phone_number: "Телефон",
                 email: "Email",
-                program_interest: "Интересует программа",
-                source: "Источник (website/telegram/email/phone/offline)",
-                comment: "Комментарий",
-                is_for_child: "Для ребёнка (true/false)",
-                child_name: "Имя ребёнка",
-                guardian_name: "ФИО опекуна",
-                guardian_phone: "Телефон опекуна",
+                program_interest: "Программа",
+                source: "Источник",
               }}
               templateFilename="admission_requests_template.csv"
               onImport={importAdmissionRequestsCSV}
-              onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admission_requests"] })}
+              onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admission-requests"] })}
             />
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setExportOpen(true)}
               className="gap-2"
             >
-              <FileDown className="h-4 w-4" />
-              Экспорт PDF
+              <FileDown className="w-4 h-4" />
+              Экспорт
             </Button>
-            {canManage && (
-              <Button onClick={() => setCreateOpen(true)} className="gap-2 bg-primary hover:bg-primary/90">
-                <Plus className="h-4 w-4" />
-                Добавить заявку
-              </Button>
-            )}
+            <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="gap-2">
+              <Plus className="w-4 h-4" />
+              Создать
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Поиск по ФИО, email, телефону..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 backdrop-blur-sm border-white/20 bg-white/40 dark:bg-slate-800/40"
-        />
+      {/* Eyebrow */}
+      <div className="px-10 py-4">
+        <div className="eyebrow">ЗАЯВКИ И ЗАЧИСЛЕНИЕ</div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
-        {STATUS_FILTERS.map((f) => (
-          <Button
-            key={f.value}
-            size="sm"
-            variant={statusFilter === f.value ? "default" : "outline"}
-            onClick={() => setStatusFilter(f.value)}
-            className={statusFilter === f.value ? "bg-primary hover:bg-primary/90" : "border-white/20 hover:bg-white/10"}
-          >
-            {f.label}
-            {f.count > 0 && (
-              <span className="ml-1.5 rounded-full bg-background/20 px-1.5 text-xs">
-                {f.count}
-              </span>
-            )}
-          </Button>
-        ))}
+      {/* Hero */}
+      <div className="px-10 py-8">
+        <h1 className="display-hero mb-2">
+          Заявки — <em className="not-italic text-accent font-medium">{requests.length}</em> в потоке.
+        </h1>
+        <p className="body-md text-mute max-w-2xl">Управление заявками поступления и зачисления студентов.</p>
       </div>
 
-      <Card className="rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ФИО</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Телефон</TableHead>
-                <TableHead>Источник</TableHead>
-                <TableHead>Ответственный</TableHead>
-                <TableHead>Дата</TableHead>
-                <TableHead>Статус</TableHead>
-                {canManage && <TableHead>Действия</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={canManage ? 8 : 7} className="text-center py-8 text-muted-foreground">
-                    Заявок нет
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.map((req) => (
-                  <RequestRow key={req.id} req={req} managers={managers} canManage={canManage} />
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Kanban Board */}
+      <div className="px-10 py-12">
+        <div className="flex gap-6 overflow-x-auto pb-4">
+          <KanbanColumn
+            status="new"
+            title="Новые"
+            index={0}
+            requests={requestsByStatus.new}
+            onStatusChange={handleStatusChange}
+          />
+          <KanbanColumn
+            status="in_review"
+            title="На проверке"
+            index={1}
+            requests={requestsByStatus.in_review}
+            onStatusChange={handleStatusChange}
+          />
+          <KanbanColumn
+            status="approved"
+            title="Одобрена"
+            index={2}
+            requests={requestsByStatus.approved}
+            onStatusChange={handleStatusChange}
+          />
+          <KanbanColumn
+            status="rejected"
+            title="Отклонена"
+            index={3}
+            requests={requestsByStatus.rejected}
+            onStatusChange={handleStatusChange}
+          />
+        </div>
+      </div>
+
+      {/* Dialogs */}
+      <CreateRequestDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
 
       <ExportPDFDialog
         open={exportOpen}
         onOpenChange={setExportOpen}
         title="Заявки на поступление"
         columns={ADMISSION_EXPORT_COLUMNS}
-        data={filtered as unknown as Record<string, unknown>[]}
+        data={filteredRequests as unknown as Record<string, unknown>[]}
         exportType="admission-requests"
       />
     </div>
