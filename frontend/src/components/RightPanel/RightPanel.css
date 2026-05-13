@@ -1,0 +1,47 @@
+/* Right Panel Styles */
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.right-panel-enter {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.right-panel-overlay {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Scrollbar styling for right panel */
+.right-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.right-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.right-panel::-webkit-scrollbar-thumb {
+  background: hsl(var(--color-border));
+  border-radius: 3px;
+}
+
+.right-panel::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--color-muted-foreground));
+}
