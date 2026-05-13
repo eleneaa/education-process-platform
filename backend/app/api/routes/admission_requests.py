@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from sqlmodel import select
 
 from app.crud import crud_admission_request
-from app.api.deps import SessionDep, CurrentUser
+from app.api.deps import SessionDep, CurrentUser, CurrentTeacherOrAdmin
 from app.core.config import settings
 from app.core.rate_limiter import rate_limiter
 from app.models import (
@@ -196,6 +196,56 @@ def delete_admission_request(
     )
 
     return {"ok": True}
+
+
+@router.post("/{admission_request_id}/approve", response_model=AdmissionRequestEnriched)
+async def approve_admission_request(
+    *,
+    session: SessionDep,
+    admission_request_id: UUID,
+    group_id: UUID,
+    current_user: CurrentTeacherOrAdmin,
+) -> Any:
+    """
+    Approve an admission request by:
+    1. Creating a user account if not exists
+    2. Enrolling the user in the selected group
+    3. Updating the admission request status to 'approved'
+
+    Only admin/teacher can approve.
+    """
+    from app.models.enums import UserRole
+
+    if current_user.role == UserRole.STUDENT:
+        raise HTTPException(
+            status_code=403,
+            detail="Students cannot approve admission requests",
+        )
+
+    admission_request = crud_admission_request.get_admission_request_by_id(
+        session=session,
+        admission_request_id=admission_request_id,
+    )
+
+    if not admission_request:
+        raise HTTPException(
+            status_code=404,
+            detail="Admission request not found",
+        )
+
+    if admission_request.status == "approved":
+        raise HTTPException(
+            status_code=400,
+            detail="Admission request is already approved",
+        )
+
+    admission_request, user, enrollment = crud_admission_request.approve_admission_request(
+        session=session,
+        db_admission_request=admission_request,
+        group_id=group_id,
+    )
+
+    return _enrich(session, admission_request)
 
 
 @router.post("/public/create", response_model=AdmissionRequest)

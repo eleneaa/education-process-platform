@@ -8,6 +8,9 @@ from app.models.admission_request import (
     AdmissionRequestCreate,
     AdmissionRequestUpdate,
 )
+from app.models import User, UserCreate, Enrollment, EnrollmentCreate
+from app.models.enums import UserRole, EnrollmentStatus
+from app.crud.crud_user import create_user
 
 
 def get_datetime_utc() -> datetime:
@@ -87,3 +90,58 @@ def delete_admission_request(
 ) -> None:
     session.delete(db_admission_request)
     session.commit()
+
+
+def approve_admission_request(
+    *,
+    session: Session,
+    db_admission_request: AdmissionRequest,
+    group_id: UUID,
+) -> tuple[AdmissionRequest, User, Enrollment]:
+    """
+    Approve an admission request by:
+    1. Creating a user account if not exists
+    2. Enrolling the user in the selected group
+    3. Updating the admission request status to 'approved'
+    """
+
+    existing_user = session.exec(
+        select(User).where(User.email == db_admission_request.email)
+    ).first()
+
+    if existing_user:
+        user = existing_user
+    else:
+        user_data = UserCreate(
+            email=db_admission_request.email,
+            full_name=db_admission_request.full_name,
+            password="temporary_password_change_me",
+            role=UserRole.STUDENT,
+            is_active=True,
+        )
+        user = create_user(session=session, user_create=user_data)
+
+    enrollment = session.exec(
+        select(Enrollment).where(
+            (Enrollment.student_id == user.id) & (Enrollment.group_id == group_id)
+        )
+    ).first()
+
+    if not enrollment:
+        enrollment_data = EnrollmentCreate(
+            student_id=user.id,
+            group_id=group_id,
+            status=EnrollmentStatus.ACTIVE,
+        )
+        enrollment = Enrollment.model_validate(enrollment_data)
+        session.add(enrollment)
+
+    db_admission_request.status = "approved"
+    db_admission_request.updated_at = get_datetime_utc()
+    session.add(db_admission_request)
+    session.commit()
+    session.refresh(db_admission_request)
+    session.refresh(user)
+    session.refresh(enrollment)
+
+    return db_admission_request, user, enrollment
