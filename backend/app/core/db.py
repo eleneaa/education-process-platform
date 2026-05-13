@@ -15,17 +15,9 @@ engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
 def init_db(session: Session) -> None:
     # Tables should be created with Alembic migrations
-    # But if you don't want to use migrations, create
-    # the tables un-commenting the next lines
-    from sqlmodel import SQLModel
+    # Don't create tables here if using migrations (avoid duplicate table errors)
 
-    # Ensure all models are imported and registered before creating tables
-    # Import all models explicitly to register them with SQLModel.metadata
-    import app.models  # noqa: F401
-
-    # This works because the models are already imported and registered from app.models
-    SQLModel.metadata.create_all(engine)
-
+    # Only create superuser if not exists
     user = session.exec(
         select(User).where(User.email == settings.FIRST_SUPERUSER)
     ).first()
