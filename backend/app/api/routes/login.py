@@ -30,7 +30,15 @@ def login_access_token(
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    logger.info(f"Login attempt: username={form_data.username}")
+    logger.info(f"Login attempt: username={form_data.username}, password_length={len(form_data.password)}")
+
+    # Debug: check if user exists
+    from sqlmodel import select
+    existing_user = session.exec(
+        select(crud.User).where(crud.User.email == form_data.username)
+    ).first()
+    logger.info(f"User exists in DB: {existing_user is not None}, email: {form_data.username}")
+
     user = crud.authenticate(
         session=session, email=form_data.username, password=form_data.password
     )
