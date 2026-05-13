@@ -46,7 +46,7 @@ const useAuth = () => {
 
     const response = await axios.post(
       `${OpenAPI.BASE}/api/v1/login/access-token`,
-      params,
+      params.toString(),
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
