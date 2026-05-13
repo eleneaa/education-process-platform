@@ -44,8 +44,11 @@ const useAuth = () => {
     params.append("username", data.username)
     params.append("password", data.password)
 
+    const url = `${OpenAPI.BASE}/api/v1/login/access-token`
+    console.log("Login attempt:", { url, username: data.username, paramsString: params.toString() })
+
     const response = await axios.post(
-      `${OpenAPI.BASE}/api/v1/login/access-token`,
+      url,
       params.toString(),
       {
         headers: {
