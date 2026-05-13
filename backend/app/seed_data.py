@@ -205,3 +205,4 @@ def seed_database(session: Session) -> None:
         logger.info(f"✓ {student2.full_name} - Module 2: NOT_STARTED")
 
     logger.info("✓ Database seeding completed!")
+    session.commit()
