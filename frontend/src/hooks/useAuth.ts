@@ -47,17 +47,28 @@ const useAuth = () => {
     const url = `${OpenAPI.BASE}/api/v1/login/access-token`
     console.log("Login attempt:", { url, username: data.username, paramsString: params.toString() })
 
-    const response = await axios.post(
-      url,
-      params.toString(),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        withCredentials: true,
-      }
-    )
-    localStorage.setItem("access_token", response.data.access_token)
+    try {
+      const response = await axios.post(
+        url,
+        params.toString(),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          withCredentials: true,
+        }
+      )
+      console.log("Login success:", response.data)
+      localStorage.setItem("access_token", response.data.access_token)
+    } catch (error: any) {
+      console.error("Login error:", {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+      })
+      throw error
+    }
   }
 
   const loginMutation = useMutation({

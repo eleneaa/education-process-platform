@@ -11,3 +11,6 @@ alembic upgrade head
 
 # Create initial data in DB
 python app/initial_data.py
+
+# Verify critical data exists
+python scripts/ensure-data.py
