@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import useAuth from "@/hooks/useAuth"
+import { StudentSchedule } from "@/components/StudentSchedule/StudentSchedule"
 
 export const Route = createFileRoute("/_layout/")({
-  component: DashboardSharp,
+  component: Dashboard,
   head: () => ({
     meta: [{ title: "Обзор" }],
   }),
@@ -316,7 +317,7 @@ function Footer() {
   )
 }
 
-function DashboardSharp() {
+function Dashboard() {
   const { user } = useAuth()
 
   const { data: programs } = useQuery({
@@ -333,6 +334,11 @@ function DashboardSharp() {
     queryKey: ["groups"],
     queryFn: () => getGroups(),
   })
+
+  // Show student schedule for students, admin dashboard for others
+  if (user?.role === "STUDENT") {
+    return <StudentSchedule />
+  }
 
   return (
     <div className="min-h-screen bg-background">
