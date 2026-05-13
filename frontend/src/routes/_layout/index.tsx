@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Search, Bell, Filter } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from "recharts"
 
-import { getPrograms, getAdmissionRequests, getGroups } from "@/client/custom-api"
+import { getPrograms, getAdmissionRequests, getGroups, getDashboardStats, getGroupsWithProgress, getLaggingStudents, getTopStudents } from "@/client/custom-api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -62,14 +62,19 @@ function Eyebrow({ number = "001", title = "ОБЗОР" }) {
 
 function HeroSection() {
   const { user } = useAuth()
+  const { data: stats } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: () => getDashboardStats(),
+  })
+
   return (
     <div className="px-10 py-8">
       <h1 className="display-hero mb-4">
-        Сегодня в системе — <em className="not-italic text-accent font-medium">12 845</em>{" "}
+        Сегодня в системе — <em className="not-italic text-accent font-medium">{stats?.active_students || 0}</em>{" "}
         активных студентов.
       </h1>
       <p className="body-md text-mute max-w-2xl italic">
-        Платформа работает стабильно. Все показатели в норме. Последнее обновление 2 часа назад.
+        Платформа работает стабильно. Все показатели в норме. Последнее обновление сейчас.
       </p>
     </div>
   )
@@ -113,40 +118,47 @@ function KPICard({ label, value, delta, deltaType, footer, sparkline }: KPICardP
 }
 
 function KPISection() {
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: () => getDashboardStats(),
+  })
+
+  if (isLoading || !stats) {
+    return (
+      <div className="px-10">
+        <div className="kpi-grid">
+          <div className="h-24 bg-mute/10 rounded animate-pulse" />
+          <div className="h-24 bg-mute/10 rounded animate-pulse" />
+          <div className="h-24 bg-mute/10 rounded animate-pulse" />
+          <div className="h-24 bg-mute/10 rounded animate-pulse" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="px-10">
       <div className="kpi-grid">
         <KPICard
           label="СТУДЕНТЫ"
-          value="12 845"
-          delta="4,2%"
-          deltaType="positive"
-          footer="было 12 327 / 30д"
-          sparkline={[100, 120, 110, 130, 140, 125, 135, 145, 140, 150, 155, 160]}
+          value={stats.active_students}
+          footer="активных зачисления"
         />
         <KPICard
           label="ПРОГРАММЫ"
-          value="84"
-          delta="2"
-          deltaType="positive"
-          footer="актуальных / 92"
-          sparkline={[80, 82, 81, 83, 84, 84, 84, 84, 84, 84, 84, 84]}
+          value={stats.active_programs}
+          footer="актуальных программ"
+        />
+        <KPICard
+          label="ГРУППЫ"
+          value={stats.active_groups}
+          footer="активных групп"
         />
         <KPICard
           label="ЗАЯВКИ"
-          value="312"
-          delta="12,5%"
-          deltaType="positive"
-          footer="в процессе / 2 847"
-          sparkline={[250, 270, 290, 305, 310, 312, 312, 312, 312, 312, 312, 312]}
-        />
-        <KPICard
-          label="СРЕДНИЙ БАЛЛ"
-          value="7,8"
-          delta="0,3"
+          value={stats.pending_admissions}
           deltaType="negative"
-          footer="на начало семестра"
-          sparkline={[7.2, 7.4, 7.5, 7.6, 7.7, 7.8, 7.8, 7.8, 7.8, 7.8, 7.8, 7.8]}
+          footer="в ожидании обработки"
         />
       </div>
     </div>
@@ -154,106 +166,112 @@ function KPISection() {
 }
 
 function ChartSection() {
-  const lineData = [
-    { month: "Янв", applications: 400, enrolled: 240 },
-    { month: "Фев", applications: 520, enrolled: 380 },
-    { month: "Мар", applications: 680, enrolled: 510 },
-    { month: "Апр", applications: 720, enrolled: 580 },
-    { month: "Май", applications: 850, enrolled: 720 },
-    { month: "Июн", applications: 920, enrolled: 850 },
-    { month: "Июл", applications: 880, enrolled: 780 },
-    { month: "Авг", applications: 950, enrolled: 890 },
-    { month: "Сен", applications: 1020, enrolled: 950 },
-    { month: "Окт", applications: 1100, enrolled: 1020 },
-    { month: "Ноя", applications: 1200, enrolled: 1100 },
-    { month: "Дек", applications: 1350, enrolled: 1250 },
-  ]
+  const { data: groupsWithProgress, isLoading: groupsLoading } = useQuery({
+    queryKey: ["groups-progress"],
+    queryFn: () => getGroupsWithProgress(),
+  })
 
-  const donutData = [
-    { name: "Бакалавриат", value: 45, color: "var(--accent)" },
-    { name: "Магистратура", value: 28, color: "var(--pos)" },
-    { name: "Специалитет", value: 15, color: "#4f46e5" },
-    { name: "ДПО", value: 12, color: "#8b5cf6" },
-  ]
+  const { data: topStudents, isLoading: topStudentsLoading } = useQuery({
+    queryKey: ["top-students"],
+    queryFn: () => getTopStudents(10),
+  })
 
-  const topPrograms = [
-    { name: "Информатика", value: 95 },
-    { name: "Экономика", value: 88 },
-    { name: "Право", value: 72 },
-    { name: "Психология", value: 68 },
-    { name: "История", value: 65 },
-    { name: "Филология", value: 62 },
-  ]
+  const { data: laggingStudents, isLoading: laggingLoading } = useQuery({
+    queryKey: ["lagging-students"],
+    queryFn: () => getLaggingStudents(),
+  })
+
+  const topStudentsData = topStudents?.map((s) => ({
+    name: s.student_name,
+    value: Math.round(s.progress_percentage),
+  })) || []
 
   return (
     <div className="px-10 py-12 space-y-12">
-      <div className="grid grid-cols-3 gap-8">
-        {/* Line Chart */}
-        <div className="col-span-2 card-sharp p-6">
-          <h3 className="heading-sm mb-6">Поступления и зачисления</h3>
+      {/* Top Students */}
+      <div className="card-sharp p-6">
+        <h3 className="heading-sm mb-6">Топ студентов по успеваемости</h3>
+        {topStudentsLoading ? (
+          <div className="h-64 bg-mute/10 rounded animate-pulse" />
+        ) : topStudentsData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={lineData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+            <BarChart data={topStudentsData} margin={{ top: 5, right: 30, left: 150, bottom: 5 }} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="var(--hair)" />
-              <XAxis dataKey="month" stroke="var(--mute)" style={{ fontSize: "12px" }} />
-              <YAxis stroke="var(--mute)" style={{ fontSize: "12px" }} />
+              <XAxis type="number" stroke="var(--mute)" style={{ fontSize: "12px" }} />
+              <YAxis dataKey="name" type="category" width={140} stroke="var(--mute)" style={{ fontSize: "12px" }} />
               <Tooltip
                 contentStyle={{ background: "var(--surface-1)", border: "1px solid var(--hair)" }}
                 labelStyle={{ color: "var(--fg)" }}
               />
-              <Line type="monotone" dataKey="applications" stroke="var(--accent)" strokeWidth={2} dot={false} />
-              <Line
-                type="monotone"
-                dataKey="enrolled"
-                stroke="var(--mute)"
-                strokeWidth={1}
-                strokeDasharray="5 5"
-                dot={false}
-              />
-            </LineChart>
+              <Bar dataKey="value" fill="var(--accent)" radius={4} />
+            </BarChart>
           </ResponsiveContainer>
-        </div>
+        ) : (
+          <div className="text-center py-12 text-mute">Нет данных о студентах</div>
+        )}
+      </div>
 
-        {/* Donut Chart */}
-        <div className="card-sharp p-6">
-          <h3 className="heading-sm mb-6">Распределение</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie data={donutData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
-                {donutData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="mt-4 space-y-2 text-xs">
-            {donutData.map((item) => (
-              <div key={item.name} className="flex items-center gap-2 justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full" style={{ background: item.color }} />
-                  <span className="text-mute">{item.name}</span>
+      {/* Lagging Students */}
+      <div className="card-sharp p-6">
+        <h3 className="heading-sm mb-6">Студенты с отставанием</h3>
+        {laggingLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-12 bg-mute/10 rounded animate-pulse" />
+            ))}
+          </div>
+        ) : laggingStudents && laggingStudents.length > 0 ? (
+          <div className="space-y-2">
+            {laggingStudents.map((student) => (
+              <div key={student.student_id} className="flex items-center justify-between p-3 border border-hair rounded">
+                <div>
+                  <div className="font-medium">{student.student_name}</div>
+                  <div className="text-sm text-mute">{student.group_name}</div>
                 </div>
-                <span className="mono font-medium">{item.value}</span>
+                <div className="text-right">
+                  <div className="text-sm font-mono">{student.progress_percentage.toFixed(0)}%</div>
+                  <div className="text-xs text-mute">{student.days_elapsed}/{student.total_days} дней</div>
+                </div>
               </div>
             ))}
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-8 text-mute">Отстающих студентов не найдено</div>
+        )}
       </div>
 
-      {/* Top Programs */}
+      {/* Groups Progress */}
       <div className="card-sharp p-6">
-        <h3 className="heading-sm mb-6">Топ программ по успеваемости</h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={topPrograms} margin={{ top: 5, right: 30, left: 150, bottom: 5 }} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--hair)" />
-            <XAxis type="number" stroke="var(--mute)" style={{ fontSize: "12px" }} />
-            <YAxis dataKey="name" type="category" width={140} stroke="var(--mute)" style={{ fontSize: "12px" }} />
-            <Tooltip
-              contentStyle={{ background: "var(--surface-1)", border: "1px solid var(--hair)" }}
-              labelStyle={{ color: "var(--fg)" }}
-            />
-            <Bar dataKey="value" fill="var(--accent)" radius={4} />
-          </BarChart>
-        </ResponsiveContainer>
+        <h3 className="heading-sm mb-6">Прогресс групп</h3>
+        {groupsLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-12 bg-mute/10 rounded animate-pulse" />
+            ))}
+          </div>
+        ) : groupsWithProgress && groupsWithProgress.length > 0 ? (
+          <div className="space-y-2">
+            {groupsWithProgress.map((group) => (
+              <div key={group.group_id} className="space-y-2 p-3 border border-hair rounded">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">{group.group_name}</div>
+                    <div className="text-sm text-mute">{group.program_name} • {group.student_count} студ.</div>
+                  </div>
+                  <div className="text-sm font-mono">{group.progress_percentage.toFixed(0)}%</div>
+                </div>
+                <div className="w-full bg-mute/20 rounded h-2">
+                  <div
+                    className="bg-accent h-2 rounded"
+                    style={{ width: `${Math.min(100, group.progress_percentage)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-mute">Активных групп не найдено</div>
+        )}
       </div>
     </div>
   )

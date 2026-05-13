@@ -22,6 +22,10 @@ import type {
   TeacherRecommendationCreate,
   UserAchievementsResponse,
   UserPoints,
+  DashboardStats,
+  GroupWithProgress,
+  StudentWithLag,
+  TopStudent,
 } from "./custom-types"
 import type { UsersPublic } from "./types.gen"
 
@@ -185,6 +189,26 @@ export async function getGroupProgress(groupId: string): Promise<GroupProgress> 
   return data
 }
 
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const { data } = await api.get<DashboardStats>("/analytics/dashboard/stats")
+  return data
+}
+
+export async function getGroupsWithProgress(): Promise<GroupWithProgress[]> {
+  const { data } = await api.get<GroupWithProgress[]>("/analytics/dashboard/groups")
+  return data
+}
+
+export async function getLaggingStudents(): Promise<StudentWithLag[]> {
+  const { data } = await api.get<StudentWithLag[]>("/analytics/dashboard/lagging-students")
+  return data
+}
+
+export async function getTopStudents(limit = 10): Promise<TopStudent[]> {
+  const { data } = await api.get<TopStudent[]>("/analytics/dashboard/top-students", { params: { limit } })
+  return data
+}
+
 // ─── Trajectory ───────────────────────────────────────────────────────────────
 // Trajectory data is fetched via teacher recommendations and other APIs
 
@@ -282,6 +306,17 @@ export async function updateAdmissionRequestStatus(
   status: string,
 ): Promise<AdmissionRequest> {
   const { data } = await api.patch<AdmissionRequest>(`/admission-requests/${id}`, { status })
+  return data
+}
+
+export async function approveAdmissionRequest(
+  id: string,
+  groupId: string,
+): Promise<AdmissionRequest> {
+  const { data } = await api.post<AdmissionRequest>(
+    `/admission-requests/${id}/approve`,
+    { group_id: groupId },
+  )
   return data
 }
 
@@ -423,4 +458,36 @@ export async function importModulesCSV(file: File): Promise<ImportResult> {
     headers: { "Content-Type": "multipart/form-data" },
   })
   return data
+}
+
+// ─── Export ───────────────────────────────────────────────────────────────────
+
+export async function exportUsersPDF(data: Record<string, any>[], title = "Пользователи") {
+  const response = await api.post("/export/users-pdf", { data }, { params: { title } })
+  return response.data
+}
+
+export async function exportUsersCSV(data: Record<string, any>[]) {
+  const response = await api.post("/export/users-csv", { data }, { responseType: "blob" })
+  return response.data
+}
+
+export async function exportAdmissionRequestsPDF(data: Record<string, any>[], title = "Заявки на обучение") {
+  const response = await api.post("/export/admission-requests-pdf", { data }, { params: { title } })
+  return response.data
+}
+
+export async function exportAdmissionRequestsCSV(data: Record<string, any>[]) {
+  const response = await api.post("/export/admission-requests-csv", { data }, { responseType: "blob" })
+  return response.data
+}
+
+export async function exportProgramsPDF(data: Record<string, any>[], title = "Программы") {
+  const response = await api.post("/export/programs-pdf", { data }, { params: { title } })
+  return response.data
+}
+
+export async function exportProgramsCSV(data: Record<string, any>[]) {
+  const response = await api.post("/export/programs-csv", { data }, { responseType: "blob" })
+  return response.data
 }

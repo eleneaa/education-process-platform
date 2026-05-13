@@ -279,6 +279,41 @@ export type AdmissionRequestsResponse = {
   count: number
 }
 
+// ─── Dashboard Analytics ──────────────────────────────────────────────────────
+
+export type DashboardStats = {
+  active_programs: number
+  active_groups: number
+  active_students: number
+  pending_admissions: number
+}
+
+export type GroupWithProgress = {
+  group_id: string
+  group_name: string
+  program_name: string
+  student_count: number
+  progress_percentage: number
+}
+
+export type StudentWithLag = {
+  student_id: string
+  student_name: string
+  group_name: string
+  progress_percentage: number
+  days_elapsed: number
+  total_days: number
+}
+
+export type TopStudent = {
+  student_id: string
+  student_name: string
+  group_name: string
+  progress_percentage: number
+  completed_modules: number
+  total_modules: number
+}
+
 // ─── Import ───────────────────────────────────────────────────────────────────
 
 export type ImportResult = {
