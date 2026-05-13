@@ -373,3 +373,5 @@ def seed_database(session: Session) -> None:
             logger.info(f"✓ {student.full_name} - {module.title}: {status.upper()} ({score}%)" if score else f"✓ {student.full_name} - {module.title}: {status.upper()}")
 
     logger.info("✓ Database seeding completed!")
+    session.flush()
+    session.commit()
