@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 def init() -> None:
     with Session(engine) as session:
         init_db(session)
+        session.commit()
         seed_database(session)
+        session.commit()
 
 
 def main() -> None:
