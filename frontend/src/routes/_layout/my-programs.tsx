@@ -28,6 +28,21 @@ const MODULE_TYPE_LABELS: Record<string, string> = {
   test: "Тест",
 }
 
+// Color palette for different groups (same as schedule)
+const groupColors = [
+  { bg: "bg-blue-500/30 dark:bg-blue-400/25", border: "border-blue-400 dark:border-blue-300", text: "text-blue-700 dark:text-blue-300", dot: "bg-blue-500 dark:bg-blue-400" },
+  { bg: "bg-purple-500/30 dark:bg-purple-400/25", border: "border-purple-400 dark:border-purple-300", text: "text-purple-700 dark:text-purple-300", dot: "bg-purple-500 dark:bg-purple-400" },
+  { bg: "bg-cyan-500/30 dark:bg-cyan-400/25", border: "border-cyan-400 dark:border-cyan-300", text: "text-cyan-700 dark:text-cyan-300", dot: "bg-cyan-500 dark:bg-cyan-400" },
+  { bg: "bg-emerald-500/30 dark:bg-emerald-400/25", border: "border-emerald-400 dark:border-emerald-300", text: "text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-500 dark:bg-emerald-400" },
+  { bg: "bg-amber-500/30 dark:bg-amber-400/25", border: "border-amber-400 dark:border-amber-300", text: "text-amber-700 dark:text-amber-300", dot: "bg-amber-500 dark:bg-amber-400" },
+  { bg: "bg-pink-500/30 dark:bg-pink-400/25", border: "border-pink-400 dark:border-pink-300", text: "text-pink-700 dark:text-pink-300", dot: "bg-pink-500 dark:bg-pink-400" },
+]
+
+const getGroupColor = (groupId: string) => {
+  const index = groupId.charCodeAt(0) % groupColors.length
+  return groupColors[index]
+}
+
 // ─── Module Content Modal ─────────────────────────────────────────────────────
 
 function ModuleContentModal({
@@ -98,7 +113,7 @@ function ProgramCard({
   progresses,
   teacherName,
 }: ProgramCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
   const [selectedModule, setSelectedModule] = useState<Module | null>(null)
   const [showModal, setShowModal] = useState(false)
 
@@ -136,13 +151,18 @@ function ProgramCard({
     return date.toLocaleDateString("ru-RU", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
   }
 
+  const color = getGroupColor(groupId)
+
   return (
     <>
-      <Card className="rounded-2xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20">
+      <Card className={`rounded-2xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 border-l-4 ${color.border}`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="flex-1">
-              <CardTitle className="text-base">{programTitle}</CardTitle>
+              <div className="flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${color.dot}`} />
+                <CardTitle className="text-base">{programTitle}</CardTitle>
+              </div>
               <p className="text-sm text-muted-foreground mt-0.5">{groupName}</p>
               {teacherName && (
                 <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
