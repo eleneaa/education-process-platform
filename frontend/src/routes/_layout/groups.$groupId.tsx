@@ -3,7 +3,7 @@ import { createFileRoute, useParams, Link, useNavigate } from "@tanstack/react-r
 import { ArrowLeft, BookOpen, Users, Pencil, Trash2, X, Check, Plus } from "lucide-react"
 import { useState, useMemo } from "react"
 
-import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup, createEnrollment, deleteEnrollment } from "@/client/custom-api"
+import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, createAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup, createEnrollment, deleteEnrollment } from "@/client/custom-api"
 import type { Attendance, AttendanceStatus, Lesson, Group } from "@/client/custom-types"
 import type { UserPublic } from "@/client/types.gen"
 import { Button } from "@/components/ui/button"
@@ -77,6 +77,20 @@ function GroupDetailPage() {
   const { data: progressesData } = useQuery({
     queryKey: ["progresses"],
     queryFn: () => getProgresses(),
+  })
+
+  const createAttendanceMutation = useMutation({
+    mutationFn: (vars: { lessonId: string; studentId: string; status: AttendanceStatus }) =>
+      createAttendance({
+        lesson_id: vars.lessonId,
+        student_id: vars.studentId,
+        status: vars.status,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["attendance", groupId] })
+      showSuccessToast("Посещаемость отмечена")
+    },
+    onError: () => showErrorToast("Ошибка при отметке посещаемости"),
   })
 
   const updateAttendanceMutation = useMutation({
@@ -502,6 +516,12 @@ function GroupDetailPage() {
                                       if (att) {
                                         updateAttendanceMutation.mutate({
                                           attendanceId: att.id,
+                                          status: nextStatus,
+                                        })
+                                      } else {
+                                        createAttendanceMutation.mutate({
+                                          lessonId: lesson.id,
+                                          studentId: student?.id || "",
                                           status: nextStatus,
                                         })
                                       }
