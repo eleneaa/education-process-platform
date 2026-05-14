@@ -14,7 +14,7 @@ import {
   Download,
   X,
 } from "lucide-react"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 
 import {
   createGroup,
@@ -538,23 +538,26 @@ function GroupsPage() {
     g.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleToggleGroupForExport = (groupId: string) => {
-    const updated = new Set(selectedGroupsForExport)
-    if (updated.has(groupId)) {
-      updated.delete(groupId)
-    } else {
-      updated.add(groupId)
-    }
-    setSelectedGroupsForExport(updated)
-  }
+  const handleToggleGroupForExport = useCallback((groupId: string) => {
+    setSelectedGroupsForExport((prev) => {
+      const updated = new Set(prev)
+      if (updated.has(groupId)) {
+        updated.delete(groupId)
+      } else {
+        updated.add(groupId)
+      }
+      return updated
+    })
+  }, [])
 
-  const handleSelectAllGroups = () => {
-    if (selectedGroupsForExport.size === filteredGroups.length) {
-      setSelectedGroupsForExport(new Set())
-    } else {
-      setSelectedGroupsForExport(new Set(filteredGroups.map((g) => g.id)))
-    }
-  }
+  const handleSelectAllGroups = useCallback(() => {
+    setSelectedGroupsForExport((prev) => {
+      if (prev.size === filteredGroups.length) {
+        return new Set()
+      }
+      return new Set(filteredGroups.map((g) => g.id))
+    })
+  }, [filteredGroups])
 
   const handleExport = async () => {
     if (selectedGroupsForExport.size === 0) {
