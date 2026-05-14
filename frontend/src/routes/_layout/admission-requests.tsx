@@ -7,9 +7,11 @@ import {
   createAdmissionRequest,
   getAdmissionRequests,
   updateAdmissionRequest,
+  approveAdmissionRequest,
+  getGroups,
   importAdmissionRequestsCSV,
 } from "@/client/custom-api"
-import type { AdmissionRequest } from "@/client/custom-types"
+import type { AdmissionRequest, Group } from "@/client/custom-types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -220,9 +222,11 @@ interface KanbanColumnProps {
   index: number
   requests: AdmissionRequest[]
   onStatusChange: (requestId: string, newStatus: string) => void
+  groups: Group[]
+  onApprove: (requestId: string, groupId: string) => void
 }
 
-function KanbanColumn({ status, title, index, requests, onStatusChange }: KanbanColumnProps) {
+function KanbanColumn({ status, title, index, requests, onStatusChange, groups, onApprove }: KanbanColumnProps) {
   return (
     <div className="flex flex-col flex-1 min-w-80">
       {/* Column Header */}
@@ -235,7 +239,7 @@ function KanbanColumn({ status, title, index, requests, onStatusChange }: Kanban
       {/* Cards */}
       <div className="flex flex-col gap-3 flex-1">
         {requests.map((req) => (
-          <AdmissionCard key={req.id} request={req} onStatusChange={onStatusChange} />
+          <AdmissionCard key={req.id} request={req} onStatusChange={onStatusChange} groups={groups} onApprove={onApprove} />
         ))}
         {requests.length === 0 && <div className="text-center py-8 text-mute text-sm">Нет заявок</div>}
       </div>
@@ -248,17 +252,32 @@ function KanbanColumn({ status, title, index, requests, onStatusChange }: Kanban
 interface AdmissionCardProps {
   request: AdmissionRequest
   onStatusChange: (requestId: string, newStatus: string) => void
+  groups: Group[]
+  onApprove: (requestId: string, groupId: string) => void
 }
 
-function AdmissionCard({ request, onStatusChange }: AdmissionCardProps) {
+function AdmissionCard({ request, onStatusChange, groups, onApprove }: AdmissionCardProps) {
   const [open, setOpen] = useState(false)
   const [newStatus, setNewStatus] = useState(request.status)
+  const [selectedGroupId, setSelectedGroupId] = useState("")
 
   const handleStatusChange = () => {
-    if (newStatus !== request.status) {
+    if (newStatus === "approved" && newStatus !== request.status) {
+      if (!selectedGroupId) return
+      onApprove(request.id, selectedGroupId)
+      setSelectedGroupId("")
+    } else if (newStatus !== request.status) {
       onStatusChange(request.id, newStatus)
     }
     setOpen(false)
+  }
+
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen)
+    if (!isOpen) {
+      setSelectedGroupId("")
+      setNewStatus(request.status)
+    }
   }
 
   const createdDate = request.created_at
@@ -298,7 +317,7 @@ function AdmissionCard({ request, onStatusChange }: AdmissionCardProps) {
       </div>
 
       {/* Status Change Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Изменить статус</DialogTitle>
@@ -316,12 +335,31 @@ function AdmissionCard({ request, onStatusChange }: AdmissionCardProps) {
                 <SelectItem value="rejected">Отклонена</SelectItem>
               </SelectContent>
             </Select>
+            {newStatus === "approved" && (
+              <>
+                <Label htmlFor="group" className="text-sm font-medium">Выберите группу *</Label>
+                <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                  <SelectTrigger id="group">
+                    <SelectValue placeholder="Выберите группу..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {groups.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.name} ({g.program_title})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
               Отмена
             </Button>
-            <Button onClick={handleStatusChange}>Применить</Button>
+            <Button onClick={handleStatusChange} disabled={newStatus === "approved" && !selectedGroupId}>
+              Применить
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -343,7 +381,13 @@ function AdmissionRequestsPage() {
     queryFn: getAdmissionRequests,
   })
 
+  const { data: groupsResponse } = useQuery({
+    queryKey: ["groups"],
+    queryFn: getGroups,
+  })
+
   const requests = requestsResponse?.data ?? []
+  const groups = groupsResponse?.data ?? []
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
@@ -353,6 +397,17 @@ function AdmissionRequestsPage() {
       showSuccessToast("Статус изменён")
     },
     onError: () => showErrorToast("Ошибка при изменении статуса"),
+  })
+
+  const approveMutation = useMutation({
+    mutationFn: ({ id, groupId }: { id: string; groupId: string }) =>
+      approveAdmissionRequest(id, groupId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admission-requests"] })
+      queryClient.invalidateQueries({ queryKey: ["groups"] })
+      showSuccessToast("Заявка одобрена и студент добавлен в группу")
+    },
+    onError: () => showErrorToast("Ошибка при одобрении заявки"),
   })
 
   // Filter by search
@@ -380,6 +435,10 @@ function AdmissionRequestsPage() {
 
   const handleStatusChange = (requestId: string, newStatus: string) => {
     updateStatusMutation.mutate({ id: requestId, status: newStatus })
+  }
+
+  const handleApprove = (requestId: string, groupId: string) => {
+    approveMutation.mutate({ id: requestId, groupId })
   }
 
   return (
@@ -457,6 +516,8 @@ function AdmissionRequestsPage() {
             index={0}
             requests={requestsByStatus.new}
             onStatusChange={handleStatusChange}
+            groups={groups}
+            onApprove={handleApprove}
           />
           <KanbanColumn
             status="in_review"
@@ -464,6 +525,8 @@ function AdmissionRequestsPage() {
             index={1}
             requests={requestsByStatus.in_review}
             onStatusChange={handleStatusChange}
+            groups={groups}
+            onApprove={handleApprove}
           />
           <KanbanColumn
             status="approved"
@@ -471,6 +534,8 @@ function AdmissionRequestsPage() {
             index={2}
             requests={requestsByStatus.approved}
             onStatusChange={handleStatusChange}
+            groups={groups}
+            onApprove={handleApprove}
           />
           <KanbanColumn
             status="rejected"
@@ -478,6 +543,8 @@ function AdmissionRequestsPage() {
             index={3}
             requests={requestsByStatus.rejected}
             onStatusChange={handleStatusChange}
+            groups={groups}
+            onApprove={handleApprove}
           />
         </div>
       </div>

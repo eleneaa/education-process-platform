@@ -11,7 +11,6 @@ import {
   UserMinus,
   MessageSquare,
   Upload,
-  Download,
 } from "lucide-react"
 import { useState, useMemo } from "react"
 
@@ -44,7 +43,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -52,7 +50,6 @@ import {
 import { RightPanel } from "@/components/RightPanel"
 import { ImportDialog } from "@/components/Common/ImportDialog"
 import useCustomToast from "@/hooks/useCustomToast"
-import { jsPDF } from "jspdf"
 
 export const Route = createFileRoute("/_layout/groups/")({
   component: GroupsPage,
@@ -410,10 +407,6 @@ function GroupsPage() {
   const [recommendationOpen, setRecommendationOpen] = useState(false)
   const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | undefined>()
 
-  // Export state
-  const [exportOpen, setExportOpen] = useState(false)
-  const [selectedGroupsForExport, setSelectedGroupsForExport] = useState<Set<string>>(new Set())
-
 
   // Queries
   const { data: groups = [] } = useQuery({
@@ -552,15 +545,6 @@ function GroupsPage() {
               onImport={importGroupsCSV}
               onSuccess={() => queryClient.invalidateQueries({ queryKey: ["groups"] })}
             />
-            <Button
-              onClick={() => setExportOpen(true)}
-              size="lg"
-              variant="outline"
-              className="gap-2 w-full sm:w-auto"
-            >
-              <Download className="h-5 w-5" />
-              Экспорт
-            </Button>
             <Button
               onClick={handleCreateGroup}
               size="lg"
@@ -775,142 +759,6 @@ function GroupsPage() {
           />
         )}
       </RightPanel>
-
-      {/* Export Dialog */}
-      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Экспорт групп с посещаемостью</DialogTitle>
-            <DialogDescription>Выберите группы для экспорта в PDF</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <input
-                type="checkbox"
-                id="select-all"
-                checked={selectedGroupsForExport.size > 0 && selectedGroupsForExport.size === filteredGroups.length}
-                onChange={() => {
-                  if (selectedGroupsForExport.size === filteredGroups.length) {
-                    setSelectedGroupsForExport(new Set())
-                  } else {
-                    setSelectedGroupsForExport(new Set(filteredGroups.map((g) => g.id)))
-                  }
-                }}
-                className="rounded border-input cursor-pointer"
-              />
-              <label htmlFor="select-all" className="text-sm font-semibold cursor-pointer">
-                Выбрать все ({filteredGroups.length})
-              </label>
-            </div>
-
-            {filteredGroups.length > 0 ? (
-              <div className="space-y-2">
-                {filteredGroups.map((group) => (
-                  <div key={group.id} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id={`group-${group.id}`}
-                      checked={selectedGroupsForExport.has(group.id)}
-                      onChange={() => {
-                        const updated = new Set(selectedGroupsForExport)
-                        if (updated.has(group.id)) {
-                          updated.delete(group.id)
-                        } else {
-                          updated.add(group.id)
-                        }
-                        setSelectedGroupsForExport(updated)
-                      }}
-                      className="rounded border-input cursor-pointer"
-                    />
-                    <label htmlFor={`group-${group.id}`} className="flex-1 text-sm cursor-pointer hover:text-primary">
-                      {group.name}
-                    </label>
-                    <span className="text-xs text-muted-foreground">
-                      {getGroupStudents(group.id).length} студентов
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
-                <p className="text-sm text-muted-foreground">Нет групп для экспорта</p>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="gap-2 pt-4 border-t border-border">
-            <Button variant="outline" onClick={() => {
-              setExportOpen(false)
-              setSelectedGroupsForExport(new Set())
-            }}>
-              Отмена
-            </Button>
-            <Button onClick={async () => {
-              if (selectedGroupsForExport.size === 0) {
-                showErrorToast("Выберите группы для экспорта")
-                return
-              }
-              try {
-                const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
-                pdf.setFont("helvetica")
-                const selectedGroupsList = groups.filter((g) => selectedGroupsForExport.has(g.id))
-                let currentPage = 0
-
-                for (const group of selectedGroupsList) {
-                  if (currentPage > 0) pdf.addPage()
-
-                  let y = 20
-                  pdf.setFontSize(16)
-                  pdf.text(group.name, 20, y, { encoding: "UTF-8" })
-                  y += 15
-
-                  pdf.setFontSize(10)
-                  const programTitle = getProgramTitle(group.program_id)
-                  const statusLabels: Record<string, string> = {
-                    planned: "Запланирована",
-                    active: "Активна",
-                    finished: "Завершена",
-                    canceled: "Отменена",
-                  }
-
-                  pdf.text(`Программа: ${programTitle || "—"}`, 20, y, { encoding: "UTF-8" })
-                  y += 7
-                  pdf.text(`Статус: ${statusLabels[group.status as string] || group.status}`, 20, y, { encoding: "UTF-8" })
-                  y += 7
-                  pdf.text(`Студентов: ${getGroupStudents(group.id).length}`, 20, y, { encoding: "UTF-8" })
-                  y += 12
-
-                  pdf.text("Студенты:", 20, y, { encoding: "UTF-8" })
-                  y += 7
-
-                  const groupEnrollments = getGroupStudents(group.id)
-                  groupEnrollments.forEach((enrollment) => {
-                    const student = getStudent(enrollment.student_id)
-                    const name = student?.full_name || student?.email || "—"
-                    pdf.text(`• ${name}`, 25, y, { encoding: "UTF-8" })
-                    y += 6
-                  })
-
-                  currentPage++
-                }
-
-                pdf.save("groups.pdf")
-                showSuccessToast("Экспорт завершен")
-                setExportOpen(false)
-                setSelectedGroupsForExport(new Set())
-              } catch (error) {
-                console.error("Export error:", error)
-                showErrorToast("Ошибка при экспорте")
-              }
-            }} disabled={selectedGroupsForExport.size === 0} className="gap-2">
-              <Download className="h-4 w-4" />
-              Экспортировать
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
     </div>
   )

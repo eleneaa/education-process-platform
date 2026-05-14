@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
-import { Search, Bell, Filter } from "lucide-react"
+import { Search, Bell, Filter, ArrowRight } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from "recharts"
 
-import { getPrograms, getAdmissionRequests, getGroups, getDashboardStats, getGroupsWithProgress, getLaggingStudents, getTopStudents } from "@/client/custom-api"
+import { getAdmissionRequests, getDashboardStats, getGroupsWithProgress, getLaggingStudents, getTopStudents } from "@/client/custom-api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -278,31 +278,53 @@ function ChartSection() {
   )
 }
 
-function ActivityFeed() {
-  const activities = [
-    { time: "14:02", title: "Зачислено новых студентов", detail: "в программу Информатика", tag: "ПРИЁМ", tagType: "accent" },
-    { time: "12:45", title: "Завершена проверка заявок", detail: "этап документов", tag: "ДОКУМЕНТ", tagType: "outline" },
-    { time: "11:20", title: "Обновлена программа обучения", detail: "Экономика 2024", tag: "ПРОГРАММА", tagType: "outline" },
-    { time: "09:15", title: "Отчисление студента", detail: "в связи с неуспеваемостью", tag: "УХОД", tagType: "error" },
-    { time: "08:30", title: "Синхронизация с внешней ИС", detail: "завершена успешно", tag: "СИНК", tagType: "success" },
-  ]
+function PendingAdmissions() {
+  const { data: admissionsResponse, isLoading } = useQuery({
+    queryKey: ["dashboard-pending-admissions"],
+    queryFn: () => getAdmissionRequests({ skip: 0, limit: 5 }),
+  })
+
+  const admissions = admissionsResponse?.data?.filter(
+    (a) => a.status === "new" || a.status === "in_review"
+  ) ?? []
+
+  const STATUS_LABELS: Record<string, string> = {
+    new: "Новая",
+    in_review: "На проверке",
+  }
 
   return (
     <div className="px-10 py-12">
       <div className="card-sharp p-6">
-        <h3 className="heading-sm mb-6">Поток активности</h3>
-        <div className="space-y-0">
-          {activities.map((activity, i) => (
-            <div key={i} className={`py-4 px-4 flex items-start gap-4 ${i > 0 ? "divider-h border-t" : ""}`}>
-              <div className="mono text-xs text-mute flex-shrink-0 w-12">{activity.time}</div>
-              <div className="flex-1 min-w-0">
-                <div className="heading-sm leading-tight">{activity.title}</div>
-                <div className="text-sm text-mute">{activity.detail}</div>
-              </div>
-              <div className={`chip-sharp chip-${activity.tagType} flex-shrink-0`}>{activity.tag}</div>
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="heading-sm">Новые заявки</h3>
+          <Link to="/admission-requests" className="text-sm text-accent hover:text-accent/80 flex items-center gap-1">
+            Все <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-12 bg-mute/10 rounded animate-pulse" />
+            ))}
+          </div>
+        ) : admissions.length > 0 ? (
+          <div className="space-y-0">
+            {admissions.map((admission, i) => (
+              <div key={admission.id} className={`py-4 px-4 flex items-start gap-3 justify-between ${i > 0 ? "divider-h border-t" : ""}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="heading-sm leading-tight">{admission.full_name}</div>
+                  <div className="text-sm text-mute">{admission.program_interest || "Без указания программы"}</div>
+                </div>
+                <div className="chip-sharp chip-accent flex-shrink-0 text-xs">
+                  {STATUS_LABELS[admission.status] || admission.status}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-mute">Нет новых заявок</div>
+        )}
       </div>
     </div>
   )
@@ -319,21 +341,6 @@ function Footer() {
 
 function Dashboard() {
   const { user } = useAuth()
-
-  const { data: programs } = useQuery({
-    queryKey: ["programs"],
-    queryFn: () => getPrograms(),
-  })
-
-  const { data: admissions } = useQuery({
-    queryKey: ["admissions"],
-    queryFn: () => getAdmissionRequests({ skip: 0, limit: 10 }),
-  })
-
-  const { data: groups } = useQuery({
-    queryKey: ["groups"],
-    queryFn: () => getGroups(),
-  })
 
   // Show student schedule for students, admin dashboard for others
   if (user?.role === "STUDENT") {
@@ -355,7 +362,7 @@ function Dashboard() {
         <>
           <KPISection />
           <ChartSection />
-          <ActivityFeed />
+          <PendingAdmissions />
         </>
       )}
       <Footer />

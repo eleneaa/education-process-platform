@@ -127,7 +127,7 @@ export const defaultNavItems: NavItem[] = [
   {
     label: "Студенты",
     icon: Users,
-    href: "/students",
+    href: "/students-sharp",
     badge: 2543,
   },
   {
