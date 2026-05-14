@@ -53,7 +53,10 @@ import { RightPanel } from "@/components/RightPanel"
 import { ImportDialog } from "@/components/Common/ImportDialog"
 import useCustomToast from "@/hooks/useCustomToast"
 import { jsPDF } from "jspdf"
-import "jspdf-autotable"
+import autoTable from "jspdf-autotable"
+
+// Register autoTable plugin
+autoTable(jsPDF)
 
 export const Route = createFileRoute("/_layout/groups/")({
   component: GroupsPage,
