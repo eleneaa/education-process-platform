@@ -2,10 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   Users,
-  Pencil,
   Plus,
   Search,
-  Trash2,
   BookOpen,
   Grid,
   List as ListIcon,
@@ -19,13 +17,11 @@ import { useState, useMemo } from "react"
 import {
   createGroup,
   createEnrollment,
-  deleteGroup,
   deleteEnrollment,
   getGroups,
   getEnrollments,
   getPrograms,
   getUsers,
-  updateGroup,
   createRecommendation,
   importGroupsCSV,
 } from "@/client/custom-api"
@@ -74,27 +70,24 @@ const getGroupColor = (groupId: string) => {
 // ─── Group Form ──────────────────────────────────────────────────────────────
 
 function GroupForm({
-  group,
   programs,
   teachers,
   onSubmit,
   onCancel,
   isLoading,
 }: {
-  group?: Group
   programs: Program[]
   teachers: UserPublic[]
   onSubmit: (data: any) => void
   onCancel: () => void
   isLoading: boolean
 }) {
-  const isEdit = !!group
-  const [name, setName] = useState(group?.name ?? "")
-  const [programId, setProgramId] = useState(group?.program_id ?? "")
-  const [teacherId, setTeacherId] = useState(group?.teacher_id ?? "")
-  const [status, setStatus] = useState(group?.status ?? "planned")
-  const [startDate, setStartDate] = useState(group?.start_date ?? "")
-  const [endDate, setEndDate] = useState(group?.end_date ?? "")
+  const [name, setName] = useState("")
+  const [programId, setProgramId] = useState("")
+  const [teacherId, setTeacherId] = useState("")
+  const [status, setStatus] = useState("planned")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -219,7 +212,7 @@ function GroupForm({
           disabled={isLoading || !name.trim() || !programId}
           className="flex-1"
         >
-          {isLoading ? "Сохранение..." : isEdit ? "Сохранить" : "Создать"}
+          {isLoading ? "Создание..." : "Создать"}
         </Button>
         <Button
           type="button"
@@ -314,18 +307,13 @@ interface GroupCardProps {
   group: Group
   studentCount: number
   programTitle?: string
-  onEdit: (group: Group) => void
-  onDelete: (group: Group) => void
 }
 
 function GroupCard({
   group,
   studentCount,
   programTitle,
-  onEdit,
-  onDelete,
 }: GroupCardProps) {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const statusColor: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
     planned: "outline",
@@ -390,36 +378,7 @@ function GroupCard({
             </div>
           </CardContent>
         </Link>
-
-        <div className="flex gap-2 px-6 pb-6" onClick={(e) => e.stopPropagation()}>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onEdit(group)}
-            className="flex-1 text-xs"
-          >
-            <Pencil className="h-4 w-4 mr-2" />
-            Редактировать
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setIsDeleteDialogOpen(true)}
-            className="text-destructive hover:bg-destructive/10 flex-1 text-xs"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Удалить
-          </Button>
-        </div>
       </Card>
-
-      <ConfirmDeleteDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={() => onDelete(group)}
-        title="Удалить группу?"
-        description={`Вы уверены, что хотите удалить группу "${group.name}"? Это действие необратимо.`}
-      />
     </div>
   )
 }
@@ -434,7 +393,6 @@ function GroupsPage() {
 
   // Group form state
   const [groupFormOpen, setGroupFormOpen] = useState(false)
-  const [editingGroup, setEditingGroup] = useState<Group | undefined>()
 
   // Student management state
   const [managingGroup, setManagingGroup] = useState<Group | undefined>()
@@ -478,25 +436,6 @@ function GroupsPage() {
     onError: () => showErrorToast("Ошибка при создании группы"),
   })
 
-  const updateGroupMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateGroup(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["groups"] })
-      showSuccessToast("Группа обновлена")
-      setGroupFormOpen(false)
-      setEditingGroup(undefined)
-    },
-    onError: () => showErrorToast("Ошибка при обновлении группы"),
-  })
-
-  const deleteGroupMutation = useMutation({
-    mutationFn: deleteGroup,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["groups"] })
-      showSuccessToast("Группа удалена")
-    },
-    onError: () => showErrorToast("Ошибка при удалении группы"),
-  })
 
   const createEnrollmentMutation = useMutation({
     mutationFn: createEnrollment,
@@ -528,21 +467,11 @@ function GroupsPage() {
   })
 
   const handleCreateGroup = () => {
-    setEditingGroup(undefined)
-    setGroupFormOpen(true)
-  }
-
-  const handleEditGroup = (group: Group) => {
-    setEditingGroup(group)
     setGroupFormOpen(true)
   }
 
   const handleSubmitGroupForm = (data: any) => {
-    if (editingGroup) {
-      updateGroupMutation.mutate({ id: editingGroup.id, data })
-    } else {
-      createGroupMutation.mutate(data)
-    }
+    createGroupMutation.mutate(data)
   }
 
   const handleManageStudents = (group: Group) => {
@@ -666,8 +595,6 @@ function GroupsPage() {
               group={group}
               studentCount={getGroupStudents(group.id).length}
               programTitle={getProgramTitle(group.program_id)}
-              onEdit={handleEditGroup}
-              onDelete={(g) => deleteGroupMutation.mutate(g.id)}
             />
           ))
         ) : (
@@ -686,21 +613,18 @@ function GroupsPage() {
         isOpen={groupFormOpen}
         onClose={() => {
           setGroupFormOpen(false)
-          setEditingGroup(undefined)
         }}
-        title={editingGroup ? "Редактировать группу" : "Создать группу"}
-        description={editingGroup ? "Измените данные группы" : "Добавьте новую группу обучения"}
+        title="Создать группу"
+        description="Добавьте новую группу обучения"
       >
         <GroupForm
-          group={editingGroup}
           programs={programs}
           teachers={teachers}
           onSubmit={handleSubmitGroupForm}
           onCancel={() => {
             setGroupFormOpen(false)
-            setEditingGroup(undefined)
           }}
-          isLoading={createGroupMutation.isPending || updateGroupMutation.isPending}
+          isLoading={createGroupMutation.isPending}
         />
       </RightPanel>
 
