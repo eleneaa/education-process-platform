@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
-import { ChevronLeft, ChevronRight, Clock, MapPin, X, BookOpen, Users, MapIcon } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, MapPin, X, BookOpen, Users, MapIcon, ArrowRight } from "lucide-react"
 import { useState, useMemo } from "react"
+import { Link } from "@tanstack/react-router"
 import { getLessons, getGroups, getPrograms, getUsers } from "@/client/custom-api"
 import { Button } from "@/components/ui/button"
 import useAuth from "@/hooks/useAuth"
@@ -367,6 +368,16 @@ export function TeacherSchedule() {
                           </div>
                         )}
                       </div>
+                      <Link to={`/groups/${lesson.group_id}`} search={{ tab: "attendance" }}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-4 w-full gap-2"
+                        >
+                          Отметить посещаемость
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      </Link>
                     </div>
                   )
                 })

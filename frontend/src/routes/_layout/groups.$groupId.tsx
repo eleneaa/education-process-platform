@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useParams, Link, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, useParams, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import { ArrowLeft, BookOpen, Users, Pencil, Trash2, X, Check, Plus } from "lucide-react"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 
 import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, createAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup, createEnrollment, deleteEnrollment, createLesson, deleteLesson, updateLesson } from "@/client/custom-api"
 import type { Attendance, AttendanceStatus, Lesson, Group } from "@/client/custom-types"
@@ -20,6 +20,9 @@ export const Route = createFileRoute("/_layout/groups/$groupId")({
   head: () => ({
     meta: [{ title: "Группа" }],
   }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: search.tab as string | undefined,
+  }),
 })
 
 function GroupDetailPage() {
@@ -27,7 +30,14 @@ function GroupDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [activeTab, setActiveTab] = useState("students")
+  const search = useSearch({ from: "/_layout/groups/$groupId" }) as { tab?: string }
+  const [activeTab, setActiveTab] = useState<string>(search?.tab || "students")
+
+  useEffect(() => {
+    if (search?.tab) {
+      setActiveTab(search.tab)
+    }
+  }, [search?.tab])
   const [editMode, setEditMode] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [addStudentOpen, setAddStudentOpen] = useState(false)
