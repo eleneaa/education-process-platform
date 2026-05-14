@@ -137,7 +137,7 @@ def get_groups_with_progress(
             GroupWithProgress(
                 group_id=group.id,
                 group_name=group.name,
-                program_name=program.name if program else "Unknown",
+                program_name=program.title if program else "Unknown",
                 student_count=len(enrollments),
                 progress_percentage=progress_percentage,
             )
