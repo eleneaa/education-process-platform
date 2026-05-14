@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import useAuth from "@/hooks/useAuth"
 import { StudentSchedule } from "@/components/StudentSchedule/StudentSchedule"
+import { TeacherTodayLessons } from "@/components/TeacherSchedule/TeacherTodayLessons"
 
 export const Route = createFileRoute("/_layout/")({
   component: Dashboard,
@@ -340,11 +341,14 @@ function Dashboard() {
     return <StudentSchedule />
   }
 
+  const isTeacher = user?.role?.toLowerCase() === "teacher"
+
   return (
     <div className="min-h-screen bg-background">
       <TopBar />
       <Eyebrow />
       <HeroSection />
+      {isTeacher && <TeacherTodayLessons />}
       <KPISection />
       <ChartSection />
       <ActivityFeed />
