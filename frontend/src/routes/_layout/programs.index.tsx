@@ -408,12 +408,7 @@ function ProgramsPage() {
       </div>
 
       <div className="px-10 py-8">
-        <h1 className="display-hero mb-2">
-          <em className="not-italic text-accent font-medium">{visiblePrograms.length}</em> программ{visiblePrograms.length % 10 === 1 && visiblePrograms.length % 100 !== 11 ? "а" : visiblePrograms.length % 10 < 5 && visiblePrograms.length % 100 > 10 ? "ы" : ""}.
-        </h1>
-        <p className="body-md text-mute max-w-2xl">
-          {isStudent ? "Доступные образовательные программы" : "Полный каталог образовательных программ"}
-        </p>
+        <h1 className="display-hero">Каталог образовательных программ</h1>
       </div>
 
       {!isStudent && (isTeacher || isAdmin) && (
