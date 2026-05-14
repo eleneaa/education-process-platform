@@ -44,6 +44,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -51,10 +52,8 @@ import {
 import { RightPanel } from "@/components/RightPanel"
 import { ImportDialog } from "@/components/Common/ImportDialog"
 import useCustomToast from "@/hooks/useCustomToast"
-import jsPDFLib from "jspdf"
+import { jsPDF } from "jspdf"
 import "jspdf-autotable"
-
-const jsPDF = jsPDFLib.jsPDF
 
 export const Route = createFileRoute("/_layout/groups/")({
   component: GroupsPage,
@@ -783,7 +782,7 @@ function GroupsPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Экспорт групп с посещаемостью</DialogTitle>
-            <p className="text-sm text-muted-foreground">Выберите группы для экспорта в PDF</p>
+            <DialogDescription>Выберите группы для экспорта в PDF</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 max-h-96 overflow-y-auto">
