@@ -365,7 +365,7 @@ function ProgramsPage() {
             />
           </div>
           <div className="flex items-center gap-3">
-            {!isTeacher && (
+            {isAdmin && (
               <>
                 <ImportDialog
                   trigger={<><Upload className="w-4 h-4" />Программы</>}
