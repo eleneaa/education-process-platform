@@ -17,6 +17,7 @@ from app.api.routes import (
     teacher_recommendations,
     export,
     import_routes,
+    attendance,
 )
 
 
@@ -37,6 +38,7 @@ api_router.include_router(lessons.router)
 api_router.include_router(teacher_recommendations.router)
 api_router.include_router(export.router)
 api_router.include_router(import_routes.router)
+api_router.include_router(attendance.router)
 
 
 if settings.ENVIRONMENT == "local":

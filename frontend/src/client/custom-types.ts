@@ -321,6 +321,24 @@ export type TopStudent = {
   total_modules: number
 }
 
+// ─── Attendance ───────────────────────────────────────────────────────────────
+
+export type AttendanceStatus = "present" | "absent" | "late"
+
+export type Attendance = {
+  id: string
+  lesson_id: string
+  student_id: string
+  status: AttendanceStatus
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export type AttendancesResponse = {
+  data: Attendance[]
+  count: number
+}
+
 // ─── Import ───────────────────────────────────────────────────────────────────
 
 export type ImportResult = {

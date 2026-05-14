@@ -11,4 +11,5 @@ from . import (
     crud_gamification,
     crud_lesson,
     crud_teacher_recommendation,
+    crud_attendance,
 )

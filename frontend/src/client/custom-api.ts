@@ -26,6 +26,9 @@ import type {
   GroupWithProgress,
   StudentWithLag,
   TopStudent,
+  Attendance,
+  AttendancesResponse,
+  AttendanceStatus,
 } from "./custom-types"
 import type { UsersPublic } from "./types.gen"
 
@@ -473,6 +476,36 @@ export async function importModulesCSV(file: File): Promise<ImportResult> {
     headers: { "Content-Type": "multipart/form-data" },
   })
   return data
+}
+
+// ─── Attendance ────────────────────────────────────────────────────────────────
+
+export async function getAttendance(groupId: string): Promise<AttendancesResponse> {
+  const { data } = await api.get<AttendancesResponse>("/attendance/", {
+    params: { group_id: groupId },
+  })
+  return data
+}
+
+export async function createAttendance(body: {
+  lesson_id: string
+  student_id: string
+  status: AttendanceStatus
+}): Promise<Attendance> {
+  const { data } = await api.post<Attendance>("/attendance/", body)
+  return data
+}
+
+export async function updateAttendance(
+  id: string,
+  body: { status?: AttendanceStatus },
+): Promise<Attendance> {
+  const { data } = await api.patch<Attendance>(`/attendance/${id}`, body)
+  return data
+}
+
+export async function deleteAttendance(id: string): Promise<void> {
+  await api.delete(`/attendance/${id}`)
 }
 
 // ─── Export ───────────────────────────────────────────────────────────────────

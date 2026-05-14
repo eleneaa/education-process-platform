@@ -50,6 +50,13 @@ from .program import (Program,
                       ProgramCreate)
 from .program_teacher import ProgramTeacher
 from .lesson import (Lesson, LessonCreate, LessonUpdate, LessonPublic, LessonsPublic)
+from .attendance import (Attendance,
+                        AttendanceBase,
+                        AttendanceCreate,
+                        AttendanceUpdate,
+                        AttendancePublic,
+                        AttendancesPublic,
+                        AttendanceStatus)
 from .teacher_recommendation import (TeacherRecommendation,
                                      TeacherRecommendationBase,
                                      TeacherRecommendationCreate,
