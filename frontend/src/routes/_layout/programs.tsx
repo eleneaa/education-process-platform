@@ -298,12 +298,20 @@ function ProgramsPage() {
   const createMutation = useMutation({
     mutationFn: (data: { title: string; description: string | null }) => createProgram(data),
     onSuccess: (created) => {
+      console.log("Program created successfully:", created)
       queryClient.invalidateQueries({ queryKey: ["programs"] })
       showSuccessToast("Программа создана")
       setCreateDialogOpen(false)
-      navigate({ to: "/programs_/$programId", params: { programId: created.id } })
+      const programId = String(created.id)
+      console.log("Navigating to program:", programId)
+      navigate({
+        to: `/programs_/${programId}`,
+      })
     },
-    onError: () => showErrorToast("Ошибка при создании"),
+    onError: (error) => {
+      console.error("Error creating program:", error)
+      showErrorToast("Ошибка при создании")
+    },
   })
 
   const submitForReviewMutation = useMutation({
