@@ -3,7 +3,7 @@ import { createFileRoute, useParams, Link, useNavigate } from "@tanstack/react-r
 import { ArrowLeft, BookOpen, Users, Pencil, Trash2, X, Check, Plus } from "lucide-react"
 import { useState, useMemo } from "react"
 
-import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, createAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup, createEnrollment, deleteEnrollment } from "@/client/custom-api"
+import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, createAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup, createEnrollment, deleteEnrollment, createLesson, deleteLesson } from "@/client/custom-api"
 import type { Attendance, AttendanceStatus, Lesson, Group } from "@/client/custom-types"
 import type { UserPublic } from "@/client/types.gen"
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,7 @@ function GroupDetailPage() {
   const [editMode, setEditMode] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [addStudentOpen, setAddStudentOpen] = useState(false)
+  const [createSeriesOpen, setCreateSeriesOpen] = useState(false)
 
   // Edit form state
   const [editName, setEditName] = useState("")
@@ -38,6 +39,15 @@ function GroupDetailPage() {
   const [editTeacherId, setEditTeacherId] = useState("")
   const [editStartDate, setEditStartDate] = useState("")
   const [editEndDate, setEditEndDate] = useState("")
+
+  // Lesson series form state
+  const [seriesTitle, setSeriesTitle] = useState("")
+  const [seriesModuleId, setSeriesModuleId] = useState("")
+  const [seriesStartDate, setSeriesStartDate] = useState("")
+  const [seriesStartTime, setSeriesStartTime] = useState("10:00")
+  const [seriesCount, setSeriesCount] = useState("4")
+  const [seriesInterval, setSeriesInterval] = useState("1") // days
+  const [seriesDuration, setSeriesDuration] = useState("90")
 
   const { data: groupsData } = useQuery({
     queryKey: ["groups"],
@@ -139,6 +149,25 @@ function GroupDetailPage() {
       showSuccessToast("Студент удален")
     },
     onError: () => showErrorToast("Ошибка при удалении студента"),
+  })
+
+  const createLessonMutation = useMutation({
+    mutationFn: createLesson,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lessons"] })
+      queryClient.invalidateQueries({ queryKey: ["attendance", groupId] })
+    },
+    onError: () => showErrorToast("Ошибка при создании урока"),
+  })
+
+  const deleteLessonMutation = useMutation({
+    mutationFn: deleteLesson,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lessons"] })
+      queryClient.invalidateQueries({ queryKey: ["attendance", groupId] })
+      showSuccessToast("Урок удален")
+    },
+    onError: () => showErrorToast("Ошибка при удалении урока"),
   })
 
   const group = useMemo(
@@ -479,7 +508,194 @@ function GroupDetailPage() {
 
               {/* Tab: Lessons */}
               <TabsContent value="lessons">
-                TODO: Вкладка уроков
+                <div className="space-y-6">
+                  <div>
+                    <Button onClick={() => setCreateSeriesOpen(!createSeriesOpen)} className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Создать серию уроков
+                    </Button>
+
+                    {createSeriesOpen && (
+                      <Card className="mt-4 p-6">
+                        <h3 className="text-lg font-semibold mb-4">Создание серии уроков</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium">Название урока</Label>
+                            <Input
+                              value={seriesTitle}
+                              onChange={(e) => setSeriesTitle(e.target.value)}
+                              placeholder="е.г., Python - Переменные"
+                              className="mt-1"
+                            />
+                          </div>
+
+                          <div>
+                            <Label className="text-sm font-medium">Модуль</Label>
+                            <Select value={seriesModuleId} onValueChange={setSeriesModuleId}>
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Выберите модуль" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {modules.map((m) => (
+                                  <SelectItem key={m.id} value={m.id}>
+                                    {m.title}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium">Начальная дата</Label>
+                              <Input
+                                type="date"
+                                value={seriesStartDate}
+                                onChange={(e) => setSeriesStartDate(e.target.value)}
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium">Время</Label>
+                              <Input
+                                type="time"
+                                value={seriesStartTime}
+                                onChange={(e) => setSeriesStartTime(e.target.value)}
+                                className="mt-1"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium">Количество уроков</Label>
+                              <Input
+                                type="number"
+                                value={seriesCount}
+                                onChange={(e) => setSeriesCount(e.target.value)}
+                                min="1"
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium">Интервал (дни)</Label>
+                              <Select value={seriesInterval} onValueChange={setSeriesInterval}>
+                                <SelectTrigger className="mt-1">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="1">Каждый день</SelectItem>
+                                  <SelectItem value="2">Через день</SelectItem>
+                                  <SelectItem value="3">Раз в 3 дня</SelectItem>
+                                  <SelectItem value="7">Раз в неделю</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium">Длительность (мин)</Label>
+                              <Input
+                                type="number"
+                                value={seriesDuration}
+                                onChange={(e) => setSeriesDuration(e.target.value)}
+                                className="mt-1"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex gap-3 pt-4 border-t border-border">
+                            <Button
+                              onClick={() => {
+                                if (!seriesTitle.trim() || !seriesModuleId || !seriesStartDate) {
+                                  showErrorToast("Заполните обязательные поля")
+                                  return
+                                }
+                                const count = parseInt(seriesCount) || 1
+                                const interval = parseInt(seriesInterval) || 1
+                                const [year, month, day] = seriesStartDate.split("-").map(Number)
+                                const [hours, minutes] = seriesStartTime.split(":").map(Number)
+
+                                let created = 0
+                                for (let i = 0; i < count; i++) {
+                                  const lessonDate = new Date(year, month - 1, day + i * interval, hours, minutes)
+                                  createLessonMutation.mutate({
+                                    title: seriesTitle.trim(),
+                                    group_id: groupId,
+                                    module_id: seriesModuleId,
+                                    scheduled_at: lessonDate.toISOString(),
+                                    duration_minutes: parseInt(seriesDuration),
+                                  })
+                                  created++
+                                }
+                                showSuccessToast(`Создано ${created} уроков`)
+                                setCreateSeriesOpen(false)
+                                setSeriesTitle("")
+                                setSeriesModuleId("")
+                                setSeriesStartDate("")
+                              }}
+                              disabled={createLessonMutation.isPending}
+                              className="flex-1 gap-2"
+                            >
+                              <Check className="h-4 w-4" />
+                              Создать серию
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => setCreateSeriesOpen(false)}
+                              disabled={createLessonMutation.isPending}
+                              className="flex-1 gap-2"
+                            >
+                              <X className="h-4 w-4" />
+                              Отмена
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    )}
+                  </div>
+
+                  {groupLessons.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">Нет уроков</div>
+                  ) : (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold">Все уроки ({groupLessons.length})</h3>
+                      {groupLessons.map((lesson) => {
+                        const lessonDate = new Date(lesson.scheduled_at)
+                        const dateStr = lessonDate.toLocaleDateString("ru-RU", {
+                          weekday: "short",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                        const lessonModule = modules.find((m) => m.id === lesson.module_id)
+                        return (
+                          <div key={lesson.id} className="flex items-center gap-4 p-4 border border-border rounded-lg">
+                            <div className="flex-1">
+                              <div className="font-medium">{lesson.title}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {dateStr} • {lesson.duration_minutes} мин
+                              </div>
+                              {lessonModule && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  📚 {lessonModule.title}
+                                </div>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => deleteLessonMutation.mutate(lesson.id)}
+                              disabled={deleteLessonMutation.isPending}
+                              className="text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               {/* Tab: Attendance */}
