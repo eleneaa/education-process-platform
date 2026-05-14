@@ -1,6 +1,7 @@
 import {
   Award,
   BookOpen,
+  Calendar,
   ClipboardList,
   Compass,
   Home,
@@ -30,6 +31,7 @@ const adminItems: Item[] = [
 
 const teacherItems: Item[] = [
   { icon: Home, title: "Дашборд", path: "/" },
+  { icon: Calendar, title: "Расписание", path: "/schedule" },
   { icon: BookOpen, title: "Программы", path: "/programs" },
   { icon: Compass, title: "Группы", path: "/groups" },
   { icon: Trophy, title: "Геймификация", path: "/gamification" },
