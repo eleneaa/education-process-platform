@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useParams, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { ArrowLeft, BookOpen, Users, Pencil, Trash2, X, Check, Plus } from "lucide-react"
+import { ArrowLeft, BookOpen, Users, Pencil, Trash2, X, Check, Plus, MessageSquare } from "lucide-react"
 import { useState, useMemo, useEffect } from "react"
 
-import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, createAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup, createEnrollment, deleteEnrollment, createLesson, deleteLesson, updateLesson } from "@/client/custom-api"
+import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, createAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup, createEnrollment, deleteEnrollment, createLesson, deleteLesson, updateLesson, getStudentRecommendations, createRecommendation, deleteRecommendation } from "@/client/custom-api"
 import type { Attendance, AttendanceStatus, Lesson, Group } from "@/client/custom-types"
 import type { UserPublic } from "@/client/types.gen"
 import { Button } from "@/components/ui/button"
@@ -43,6 +43,8 @@ function GroupDetailPage() {
   const [addStudentOpen, setAddStudentOpen] = useState(false)
   const [createSeriesOpen, setCreateSeriesOpen] = useState(false)
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null)
+  const [recommendationStudentId, setRecommendationStudentId] = useState<string | null>(null)
+  const [recommendationText, setRecommendationText] = useState("")
 
   // Edit form state
   const [editName, setEditName] = useState("")
@@ -198,6 +200,17 @@ function GroupDetailPage() {
       setEditingLessonId(null)
     },
     onError: () => showErrorToast("Ошибка при обновлении урока"),
+  })
+
+  const createRecommendationMutation = useMutation({
+    mutationFn: (data: any) => createRecommendation(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["recommendations"] })
+      showSuccessToast("Рекомендация отправлена")
+      setRecommendationStudentId(null)
+      setRecommendationText("")
+    },
+    onError: () => showErrorToast("Ошибка при отправке рекомендации"),
   })
 
   const group = useMemo(
@@ -516,21 +529,95 @@ function GroupDetailPage() {
                               <div className="font-medium">{student?.full_name}</div>
                               <div className="text-sm text-muted-foreground">{student?.email}</div>
                             </div>
-                            {enrollment && (
+                            <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => deleteEnrollmentMutation.mutate(enrollment.id)}
-                                disabled={deleteEnrollmentMutation.isPending}
-                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => setRecommendationStudentId(student?.id || null)}
+                                className="gap-2"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <MessageSquare className="h-4 w-4" />
+                                Рекомендация
                               </Button>
-                            )}
+                              {enrollment && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => deleteEnrollmentMutation.mutate(enrollment.id)}
+                                  disabled={deleteEnrollmentMutation.isPending}
+                                  className="text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         )
                       })}
                     </div>
+                  )}
+
+                  {recommendationStudentId && (
+                    <Card className="mt-8 p-6 border-2 border-accent">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold">
+                          Рекомендация для {students.find((s) => s?.id === recommendationStudentId)?.full_name}
+                        </h3>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setRecommendationStudentId(null)
+                            setRecommendationText("")
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-sm font-medium">Рекомендация</Label>
+                          <textarea
+                            value={recommendationText}
+                            onChange={(e) => setRecommendationText(e.target.value)}
+                            placeholder="Введите рекомендацию для студента..."
+                            className="w-full min-h-32 mt-2 p-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                          />
+                        </div>
+                        <div className="flex gap-3 pt-4 border-t border-border">
+                          <Button
+                            onClick={() => {
+                              if (!recommendationText.trim()) {
+                                showErrorToast("Введите рекомендацию")
+                                return
+                              }
+                              createRecommendationMutation.mutate({
+                                student_id: recommendationStudentId,
+                                module_id: null,
+                                content: recommendationText.trim(),
+                                recommendation_type: "general",
+                              })
+                            }}
+                            disabled={createRecommendationMutation.isPending}
+                            className="flex-1 gap-2"
+                          >
+                            <Check className="h-4 w-4" />
+                            Отправить
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setRecommendationStudentId(null)
+                              setRecommendationText("")
+                            }}
+                            disabled={createRecommendationMutation.isPending}
+                            className="flex-1"
+                          >
+                            Отмена
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
                   )}
                 </div>
               </TabsContent>
