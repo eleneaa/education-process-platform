@@ -304,7 +304,7 @@ function StudentGamification({ userId }: { userId: string }) {
   })
 
   const pts = pointsData?.points ?? 0
-  const earnedIds = new Set((userAchievements?.data ?? []).map((ua) => ua.id))
+  const earnedIds = new Set((userAchievements?.data ?? []).map((ua) => ua.achievement_id))
   const sorted = (allAchievements?.data ?? []).slice().sort((a, b) => (a.points_required ?? 0) - (b.points_required ?? 0))
   const earned = sorted.filter((a) => earnedIds.has(a.id))
   const notEarned = sorted.filter((a) => !earnedIds.has(a.id))
