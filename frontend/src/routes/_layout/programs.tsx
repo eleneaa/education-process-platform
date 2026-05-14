@@ -16,6 +16,21 @@ import { ImportDialog } from "@/components/Common/ImportDialog"
 import { ExportPDFDialog, type ExportColumn } from "@/components/Common/ExportPDFDialog"
 import useCustomToast from "@/hooks/useCustomToast"
 
+// Color palette for different programs (same as schedule)
+const programColors = [
+  { bg: "bg-blue-500/30 dark:bg-blue-400/25", border: "border-blue-400 dark:border-blue-300", text: "text-blue-700 dark:text-blue-300", dot: "bg-blue-500 dark:bg-blue-400" },
+  { bg: "bg-purple-500/30 dark:bg-purple-400/25", border: "border-purple-400 dark:border-purple-300", text: "text-purple-700 dark:text-purple-300", dot: "bg-purple-500 dark:bg-purple-400" },
+  { bg: "bg-cyan-500/30 dark:bg-cyan-400/25", border: "border-cyan-400 dark:border-cyan-300", text: "text-cyan-700 dark:text-cyan-300", dot: "bg-cyan-500 dark:bg-cyan-400" },
+  { bg: "bg-emerald-500/30 dark:bg-emerald-400/25", border: "border-emerald-400 dark:border-emerald-300", text: "text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-500 dark:bg-emerald-400" },
+  { bg: "bg-amber-500/30 dark:bg-amber-400/25", border: "border-amber-400 dark:border-amber-300", text: "text-amber-700 dark:text-amber-300", dot: "bg-amber-500 dark:bg-amber-400" },
+  { bg: "bg-pink-500/30 dark:bg-pink-400/25", border: "border-pink-400 dark:border-pink-300", text: "text-pink-700 dark:text-pink-300", dot: "bg-pink-500 dark:bg-pink-400" },
+]
+
+const getProgramColor = (programId: string) => {
+  const index = programId.charCodeAt(0) % programColors.length
+  return programColors[index]
+}
+
 export const Route = createFileRoute("/_layout/programs")({
   component: ProgramsPage,
   head: () => ({
@@ -70,11 +85,15 @@ interface ProgramCardProps {
 
 function ProgramCard({ program, moduleCount, groupCount, onEdit }: ProgramCardProps) {
   const status = program.status || "draft"
+  const color = getProgramColor(program.id)
 
   return (
-    <Card className="border-hair rounded-2xl overflow-hidden p-0 flex flex-col h-full">
+    <Card className={`border-hair rounded-2xl overflow-hidden p-0 flex flex-col h-full border-l-4 ${color.border}`}>
       <div className="p-6 flex flex-col flex-1">
-        <div className="label-sm text-mute mb-3">{STATUS_LABELS[status]}</div>
+        <div className="flex items-center gap-2 mb-3">
+          <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${color.dot}`} />
+          <div className="label-sm text-mute">{STATUS_LABELS[status]}</div>
+        </div>
         <h3 className="heading-sm text-fg mb-4 line-clamp-2">{program.title}</h3>
         <div className="mb-6">
           <Badge variant={getStatusChipVariant(status)} className="font-medium">
@@ -346,8 +365,8 @@ function ProgramsPage() {
       <div className="px-10 py-12">
         {filteredPrograms.length > 0 ? (
           <div className="grid grid-cols-3 gap-6">
-            {filteredPrograms.map((program, idx) => (
-              <div key={program.id} className={idx === 0 ? "col-span-2 row-span-2" : ""}>
+            {filteredPrograms.map((program) => (
+              <div key={program.id}>
                 <ProgramCard
                   program={program}
                   moduleCount={getModuleCount(program.id)}
