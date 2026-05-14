@@ -53,10 +53,6 @@ import { RightPanel } from "@/components/RightPanel"
 import { ImportDialog } from "@/components/Common/ImportDialog"
 import useCustomToast from "@/hooks/useCustomToast"
 import { jsPDF } from "jspdf"
-import autoTable from "jspdf-autotable"
-
-// Register autoTable plugin
-autoTable(jsPDF)
 
 export const Route = createFileRoute("/_layout/groups/")({
   component: GroupsPage,
@@ -859,11 +855,16 @@ function GroupsPage() {
               try {
                 const pdf = new jsPDF()
                 const selectedGroupsList = groups.filter((g) => selectedGroupsForExport.has(g.id))
-                for (let pageIdx = 0; pageIdx < selectedGroupsList.length; pageIdx++) {
-                  const group = selectedGroupsList[pageIdx]
-                  if (pageIdx > 0) pdf.addPage()
+                let currentPage = 0
+
+                for (const group of selectedGroupsList) {
+                  if (currentPage > 0) pdf.addPage()
+
+                  let y = 20
                   pdf.setFontSize(16)
-                  pdf.text(group.name, 15, 15)
+                  pdf.text(group.name, 20, y)
+                  y += 15
+
                   pdf.setFontSize(10)
                   const programTitle = getProgramTitle(group.program_id)
                   const statusLabels: Record<string, string> = {
@@ -872,34 +873,29 @@ function GroupsPage() {
                     finished: "Завершена",
                     canceled: "Отменена",
                   }
-                  const infoText = [
-                    `Программа: ${programTitle || "—"}`,
-                    `Статус: ${statusLabels[group.status as string] || group.status}`,
-                    `Студентов: ${getGroupStudents(group.id).length}`,
-                  ]
-                  let currentY = 25
-                  infoText.forEach((text) => {
-                    pdf.text(text, 15, currentY)
-                    currentY += 6
-                  })
+
+                  pdf.text(`Программа: ${programTitle || "—"}`, 20, y)
+                  y += 7
+                  pdf.text(`Статус: ${statusLabels[group.status as string] || group.status}`, 20, y)
+                  y += 7
+                  pdf.text(`Студентов: ${getGroupStudents(group.id).length}`, 20, y)
+                  y += 12
+
+                  pdf.text("Студенты:", 20, y)
+                  y += 7
+
                   const groupEnrollments = getGroupStudents(group.id)
-                  const tableData = groupEnrollments.map((enrollment) => {
+                  groupEnrollments.forEach((enrollment) => {
                     const student = getStudent(enrollment.student_id)
-                    return [student?.full_name || student?.email || "—", student?.email || "—", "0/0", "—"]
+                    const name = student?.full_name || student?.email || "—"
+                    pdf.text(`• ${name}`, 25, y)
+                    y += 6
                   })
-                  const startY = currentY + 10
-                  ;(pdf as any).autoTable({
-                    head: [["Студент", "Email", "Посещения", "Процент"]],
-                    body: tableData,
-                    startY,
-                    margin: 15,
-                    theme: "grid",
-                    headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: "bold" },
-                    bodyStyles: { textColor: [0, 0, 0] },
-                    alternateRowStyles: { fillColor: [245, 245, 245] },
-                  })
+
+                  currentPage++
                 }
-                pdf.save("groups_attendance.pdf")
+
+                pdf.save("groups.pdf")
                 showSuccessToast("Экспорт завершен")
                 setExportOpen(false)
                 setSelectedGroupsForExport(new Set())
