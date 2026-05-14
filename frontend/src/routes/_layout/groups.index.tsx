@@ -354,11 +354,11 @@ function GroupCard({
   return (
     <div>
       <Card
-        className="group overflow-hidden rounded-2xl backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+        className="group overflow-hidden rounded-2xl backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
         style={{ borderLeft: `4px solid ${borderColors[color.border]}` }}
       >
-        <Link to="/groups/$groupId" params={{ groupId: group.id }} className="block cursor-pointer">
-          <CardContent className="p-6">
+        <Link to="/groups/$groupId" params={{ groupId: group.id }} className="block cursor-pointer flex-1 flex flex-col">
+          <CardContent className="p-6 flex-1 flex flex-col">
             <div className="flex items-start justify-between gap-4 mb-4">
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors truncate">
@@ -655,7 +655,7 @@ function GroupsPage() {
       <div
         className={
           view === "grid"
-            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max"
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
             : "space-y-3"
         }
       >
