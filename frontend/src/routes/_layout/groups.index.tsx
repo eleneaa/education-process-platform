@@ -853,7 +853,8 @@ function GroupsPage() {
                 return
               }
               try {
-                const pdf = new jsPDF()
+                const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
+                pdf.setFont("helvetica")
                 const selectedGroupsList = groups.filter((g) => selectedGroupsForExport.has(g.id))
                 let currentPage = 0
 
@@ -862,7 +863,7 @@ function GroupsPage() {
 
                   let y = 20
                   pdf.setFontSize(16)
-                  pdf.text(group.name, 20, y)
+                  pdf.text(group.name, 20, y, { encoding: "UTF-8" })
                   y += 15
 
                   pdf.setFontSize(10)
@@ -874,21 +875,21 @@ function GroupsPage() {
                     canceled: "Отменена",
                   }
 
-                  pdf.text(`Программа: ${programTitle || "—"}`, 20, y)
+                  pdf.text(`Программа: ${programTitle || "—"}`, 20, y, { encoding: "UTF-8" })
                   y += 7
-                  pdf.text(`Статус: ${statusLabels[group.status as string] || group.status}`, 20, y)
+                  pdf.text(`Статус: ${statusLabels[group.status as string] || group.status}`, 20, y, { encoding: "UTF-8" })
                   y += 7
-                  pdf.text(`Студентов: ${getGroupStudents(group.id).length}`, 20, y)
+                  pdf.text(`Студентов: ${getGroupStudents(group.id).length}`, 20, y, { encoding: "UTF-8" })
                   y += 12
 
-                  pdf.text("Студенты:", 20, y)
+                  pdf.text("Студенты:", 20, y, { encoding: "UTF-8" })
                   y += 7
 
                   const groupEnrollments = getGroupStudents(group.id)
                   groupEnrollments.forEach((enrollment) => {
                     const student = getStudent(enrollment.student_id)
                     const name = student?.full_name || student?.email || "—"
-                    pdf.text(`• ${name}`, 25, y)
+                    pdf.text(`• ${name}`, 25, y, { encoding: "UTF-8" })
                     y += 6
                   })
 
