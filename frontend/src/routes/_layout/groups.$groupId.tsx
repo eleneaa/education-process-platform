@@ -1,13 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useParams, Link } from "@tanstack/react-router"
-import { ArrowLeft, BookOpen, Users } from "lucide-react"
+import { createFileRoute, useParams, Link, useNavigate } from "@tanstack/react-router"
+import { ArrowLeft, BookOpen, Users, Pencil, Trash2 } from "lucide-react"
 import { useState, useMemo } from "react"
 
-import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, getPrograms, getUsers, getModules, getProgresses } from "@/client/custom-api"
-import type { Attendance, AttendanceStatus, Lesson } from "@/client/custom-types"
+import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup } from "@/client/custom-api"
+import type { Attendance, AttendanceStatus, Lesson, Group } from "@/client/custom-types"
+import type { UserPublic } from "@/client/types.gen"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
+import { RightPanel } from "@/components/RightPanel"
 import useCustomToast from "@/hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/groups/$groupId")({
@@ -19,9 +25,12 @@ export const Route = createFileRoute("/_layout/groups/$groupId")({
 
 function GroupDetailPage() {
   const { groupId } = useParams({ from: "/_layout/groups/$groupId" })
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const [activeTab, setActiveTab] = useState("students")
+  const [editOpen, setEditOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const { data: groupsData } = useQuery({
     queryKey: ["groups"],
@@ -71,6 +80,25 @@ function GroupDetailPage() {
       showSuccessToast("Посещаемость обновлена")
     },
     onError: () => showErrorToast("Ошибка при обновлении"),
+  })
+
+  const updateGroupMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => updateGroup(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["groups"] })
+      showSuccessToast("Группа обновлена")
+      setEditOpen(false)
+    },
+    onError: () => showErrorToast("Ошибка при обновлении группы"),
+  })
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: deleteGroup,
+    onSuccess: () => {
+      showSuccessToast("Группа удалена")
+      navigate({ to: "/groups" })
+    },
+    onError: () => showErrorToast("Ошибка при удалении группы"),
   })
 
   const group = useMemo(
@@ -159,6 +187,26 @@ function GroupDetailPage() {
                   Преподаватель: <span className="text-foreground font-medium">{teacher.full_name || teacher.email}</span>
                 </div>
               )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditOpen(true)}
+                className="gap-2"
+              >
+                <Pencil className="h-4 w-4" />
+                Редактировать
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteDialogOpen(true)}
+                className="gap-2 text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+                Удалить
+              </Button>
             </div>
           </div>
 
@@ -309,7 +357,196 @@ function GroupDetailPage() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Edit Panel */}
+        <RightPanel
+          isOpen={editOpen}
+          onClose={() => setEditOpen(false)}
+          title="Редактировать группу"
+          description="Измените данные группы"
+        >
+          {group && (
+            <GroupEditForm
+              group={group}
+              programs={programsData?.data ?? []}
+              teachers={usersData?.data.filter((u) => u.role === "TEACHER") ?? []}
+              onSubmit={(data) => updateGroupMutation.mutate({ id: group.id, data })}
+              onCancel={() => setEditOpen(false)}
+              isLoading={updateGroupMutation.isPending}
+            />
+          )}
+        </RightPanel>
+
+        {/* Delete Dialog */}
+        <ConfirmDeleteDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={() => deleteGroupMutation.mutate(groupId)}
+          title="Удалить группу?"
+          description={`Вы уверены, что хотите удалить группу "${group.name}"? Это действие необратимо.`}
+        />
       </div>
     </div>
+  )
+}
+
+function GroupEditForm({
+  group,
+  programs,
+  teachers,
+  onSubmit,
+  onCancel,
+  isLoading,
+}: {
+  group: Group
+  programs: any[]
+  teachers: UserPublic[]
+  onSubmit: (data: any) => void
+  onCancel: () => void
+  isLoading: boolean
+}) {
+  const [name, setName] = useState(group?.name ?? "")
+  const [programId, setProgramId] = useState(group?.program_id ?? "")
+  const [teacherId, setTeacherId] = useState(group?.teacher_id ?? "")
+  const [status, setStatus] = useState(group?.status ?? "planned")
+  const [startDate, setStartDate] = useState(group?.start_date ?? "")
+  const [endDate, setEndDate] = useState(group?.end_date ?? "")
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim() || !programId) return
+    onSubmit({
+      name: name.trim(),
+      program_id: programId,
+      teacher_id: teacherId || undefined,
+      status,
+      start_date: startDate || undefined,
+      end_date: endDate || undefined,
+    })
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <Label htmlFor="group-name" className="text-base font-semibold">
+          Название группы
+        </Label>
+        <Input
+          id="group-name"
+          placeholder="Введите название группы"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="mt-2"
+          disabled={isLoading}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="program" className="text-base font-semibold">
+          Программа обучения
+        </Label>
+        {programs.length > 0 ? (
+          <Select value={programId} onValueChange={setProgramId} disabled={isLoading}>
+            <SelectTrigger id="program" className="mt-2">
+              <SelectValue placeholder="Выберите программу" />
+            </SelectTrigger>
+            <SelectContent>
+              {programs.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="mt-2 p-2 text-sm text-destructive bg-destructive/10 rounded-md">
+            Нет доступных программ обучения
+          </div>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="teacher" className="text-base font-semibold">
+          Преподаватель
+        </Label>
+        <Select value={teacherId} onValueChange={setTeacherId} disabled={isLoading || teachers.length === 0}>
+          <SelectTrigger id="teacher" className="mt-2">
+            <SelectValue placeholder={teachers.length > 0 ? "Выберите преподавателя (опционально)" : "Нет доступных преподавателей"} />
+          </SelectTrigger>
+          <SelectContent>
+            {teachers.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                {t.full_name || t.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="start-date" className="text-base font-semibold">
+            Начало
+          </Label>
+          <Input
+            id="start-date"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="mt-2"
+            disabled={isLoading}
+          />
+        </div>
+        <div>
+          <Label htmlFor="end-date" className="text-base font-semibold">
+            Конец
+          </Label>
+          <Input
+            id="end-date"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="mt-2"
+            disabled={isLoading}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="status" className="text-base font-semibold">
+          Статус
+        </Label>
+        <Select value={status} onValueChange={setStatus} disabled={isLoading}>
+          <SelectTrigger id="status" className="mt-2">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="planned">Запланирована</SelectItem>
+            <SelectItem value="active">Активна</SelectItem>
+            <SelectItem value="finished">Завершена</SelectItem>
+            <SelectItem value="canceled">Отменена</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex gap-3 pt-4 border-t border-border">
+        <Button
+          type="submit"
+          disabled={isLoading || !name.trim() || !programId}
+          className="flex-1"
+        >
+          {isLoading ? "Сохранение..." : "Сохранить"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isLoading}
+          className="flex-1"
+        >
+          Отмена
+        </Button>
+      </div>
+    </form>
   )
 }
