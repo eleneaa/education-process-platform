@@ -133,11 +133,45 @@ def _update_progress_from_attendance(session: Session, attendance: Attendance) -
         if progress.status == ProgressStatus.NOT_STARTED:
             progress.status = ProgressStatus.IN_PROGRESS
             session.add(progress)
+
+        # Check if all lessons for this module are attended
+        _check_module_completion(session, attendance.student_id, lesson.module_id, progress)
     elif attendance.status == AttendanceStatus.absent:
         # If marked absent, keep or reset to NOT_STARTED
         pass
 
     session.commit()
+
+
+def _check_module_completion(session: Session, student_id: UUID, module_id: UUID, progress: Progress) -> None:
+    """Check if student attended all lessons in the module and mark as completed."""
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # Get all lessons for the module
+    all_lessons = session.exec(
+        select(Lesson).where(Lesson.module_id == module_id)
+    ).all()
+
+    if not all_lessons:
+        return
+
+    # Count attended lessons (present status)
+    attended_count = session.exec(
+        select(Attendance).where(
+            Attendance.student_id == student_id,
+            Attendance.lesson_id.in_([l.id for l in all_lessons]),
+            Attendance.status == AttendanceStatus.present,
+        )
+    ).all()
+
+    # If attended all lessons, mark module as completed
+    if len(attended_count) >= len(all_lessons):
+        if progress.status != ProgressStatus.COMPLETED:
+            progress.status = ProgressStatus.COMPLETED
+            session.add(progress)
+            logger.info(f"Module {module_id} marked as COMPLETED for student {student_id}")
+            session.commit()
 
 
 def _award_points_for_attendance(session: Session, attendance: Attendance) -> None:
