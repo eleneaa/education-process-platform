@@ -8,7 +8,7 @@ from app.crud import crud_program
 from app.api.deps import SessionDep, CurrentUser, CurrentAdmin, OptionalCurrentUser, CurrentTeacherOrAdmin
 from app.models.enums import ProgramStatus, UserRole
 
-from app.models import ProgramsPublic, Program, ProgramCreate, ProgramUpdate
+from app.models import ProgramsPublic, Program, ProgramCreate, ProgramUpdate, ProgramPublic
 
 
 class AddTeacherRequest(BaseModel):
@@ -91,7 +91,7 @@ def read_program(
     return program
 
 
-@router.post("/", response_model=Program)
+@router.post("/", response_model=ProgramPublic)
 def create_program(
     *,
     session: SessionDep,
