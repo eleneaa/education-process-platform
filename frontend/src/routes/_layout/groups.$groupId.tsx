@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useParams, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, BookOpen, Users, Pencil, Trash2 } from "lucide-react"
+import { ArrowLeft, BookOpen, Users, Pencil, Trash2, X, Check, Plus } from "lucide-react"
 import { useState, useMemo } from "react"
 
-import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup } from "@/client/custom-api"
+import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup, createEnrollment, deleteEnrollment } from "@/client/custom-api"
 import type { Attendance, AttendanceStatus, Lesson, Group } from "@/client/custom-types"
 import type { UserPublic } from "@/client/types.gen"
 import { Button } from "@/components/ui/button"
@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
-import { RightPanel } from "@/components/RightPanel"
 import useCustomToast from "@/hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/groups/$groupId")({
@@ -28,9 +27,17 @@ function GroupDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [activeTab, setActiveTab] = useState("students")
-  const [editOpen, setEditOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState("info")
+  const [editMode, setEditMode] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [addStudentOpen, setAddStudentOpen] = useState(false)
+
+  // Edit form state
+  const [editName, setEditName] = useState("")
+  const [editProgramId, setEditProgramId] = useState("")
+  const [editTeacherId, setEditTeacherId] = useState("")
+  const [editStartDate, setEditStartDate] = useState("")
+  const [editEndDate, setEditEndDate] = useState("")
 
   const { data: groupsData } = useQuery({
     queryKey: ["groups"],
@@ -87,7 +94,7 @@ function GroupDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["groups"] })
       showSuccessToast("Группа обновлена")
-      setEditOpen(false)
+      setEditMode(false)
     },
     onError: () => showErrorToast("Ошибка при обновлении группы"),
   })
@@ -99,6 +106,25 @@ function GroupDetailPage() {
       navigate({ to: "/groups" })
     },
     onError: () => showErrorToast("Ошибка при удалении группы"),
+  })
+
+  const createEnrollmentMutation = useMutation({
+    mutationFn: createEnrollment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] })
+      showSuccessToast("Студент добавлен")
+      setAddStudentOpen(false)
+    },
+    onError: () => showErrorToast("Ошибка при добавлении студента"),
+  })
+
+  const deleteEnrollmentMutation = useMutation({
+    mutationFn: deleteEnrollment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] })
+      showSuccessToast("Студент удален")
+    },
+    onError: () => showErrorToast("Ошибка при удалении студента"),
   })
 
   const group = useMemo(
@@ -163,105 +189,304 @@ function GroupDetailPage() {
     )
   }
 
+  const handleEditClick = () => {
+    setEditName(group.name)
+    setEditProgramId(group.program_id)
+    setEditTeacherId(group.teacher_id || "")
+    setEditStartDate(group.start_date || "")
+    setEditEndDate(group.end_date || "")
+    setEditMode(true)
+  }
+
+  const handleSaveEdit = () => {
+    if (!editName.trim() || !editProgramId) return
+    updateGroupMutation.mutate({
+      id: group.id,
+      data: {
+        name: editName.trim(),
+        program_id: editProgramId,
+        teacher_id: editTeacherId || undefined,
+        start_date: editStartDate || undefined,
+        end_date: editEndDate || undefined,
+      },
+    })
+  }
+
+  const availableStudents = usersData?.data.filter(
+    (u) => u.role === "STUDENT" && !students.some((s) => s?.id === u.id)
+  ) ?? []
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <Link to="/groups" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
-            <ArrowLeft className="w-4 h-4" />
-            Назад к группам
-          </Link>
+        {/* Back Link */}
+        <Link to="/groups" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
+          <ArrowLeft className="w-4 h-4" />
+          Назад к группам
+        </Link>
 
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex-1">
-              <h1 className="text-3xl lg:text-4xl font-bold mb-3">{group.name}</h1>
-              {program && (
-                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
-                  <BookOpen className="w-4 h-4" />
-                  <span>{program.title}</span>
+        {/* Header Card */}
+        <Card className="mb-8">
+          <CardContent className="p-8">
+            {editMode ? (
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-base font-semibold">Название группы</Label>
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="mt-2"
+                  />
                 </div>
-              )}
-              {teacher && (
-                <div className="text-muted-foreground text-sm">
-                  Преподаватель: <span className="text-foreground font-medium">{teacher.full_name || teacher.email}</span>
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditOpen(true)}
-                className="gap-2"
-              >
-                <Pencil className="h-4 w-4" />
-                Редактировать
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDeleteDialogOpen(true)}
-                className="gap-2 text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-4 w-4" />
-                Удалить
-              </Button>
-            </div>
-          </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-muted-foreground text-sm mb-1">Студентов</div>
-                <div className="text-2xl font-bold">{students.length}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-muted-foreground text-sm mb-1">Занятий</div>
-                <div className="text-2xl font-bold">{groupLessons.length}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-muted-foreground text-sm mb-1">Модулей</div>
-                <div className="text-2xl font-bold">{modules.length}</div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                <div>
+                  <Label className="text-base font-semibold">Программа обучения</Label>
+                  <Select value={editProgramId} onValueChange={setEditProgramId}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {programsData?.data.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-base font-semibold">Преподаватель</Label>
+                  <Select value={editTeacherId} onValueChange={setEditTeacherId}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Выберите преподавателя (опционально)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {usersData?.data.filter((u) => u.role === "TEACHER").map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.full_name || t.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-base font-semibold">Начало</Label>
+                    <Input
+                      type="date"
+                      value={editStartDate}
+                      onChange={(e) => setEditStartDate(e.target.value)}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-base font-semibold">Конец</Label>
+                    <Input
+                      type="date"
+                      value={editEndDate}
+                      onChange={(e) => setEditEndDate(e.target.value)}
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-border">
+                  <Button
+                    onClick={handleSaveEdit}
+                    disabled={updateGroupMutation.isPending}
+                    className="flex-1 gap-2"
+                  >
+                    <Check className="h-4 w-4" />
+                    Сохранить
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditMode(false)}
+                    disabled={updateGroupMutation.isPending}
+                    className="flex-1 gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Отмена
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex-1">
+                    <h1 className="text-3xl lg:text-4xl font-bold mb-3">{group.name}</h1>
+                    {program && (
+                      <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
+                        <BookOpen className="w-4 h-4" />
+                        <span>{program.title}</span>
+                      </div>
+                    )}
+                    {teacher && (
+                      <div className="text-muted-foreground text-sm">
+                        Преподаватель: <span className="text-foreground font-medium">{teacher.full_name || teacher.email}</span>
+                      </div>
+                    )}
+                    {editStartDate && (
+                      <div className="text-muted-foreground text-sm mt-2">
+                        Период: {new Date(editStartDate).toLocaleDateString("ru-RU")} - {editEndDate ? new Date(editEndDate).toLocaleDateString("ru-RU") : "не указано"}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEditClick}
+                      className="gap-2"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Редактировать
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDeleteDialogOpen(true)}
+                      className="gap-2 text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Удалить
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="text-muted-foreground text-sm mb-1">Студентов</div>
+                    <div className="text-2xl font-bold">{students.length}</div>
+                  </div>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="text-muted-foreground text-sm mb-1">Занятий</div>
+                    <div className="text-2xl font-bold">{groupLessons.length}</div>
+                  </div>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="text-muted-foreground text-sm mb-1">Модулей</div>
+                    <div className="text-2xl font-bold">{modules.length}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Tabs */}
         <Card>
           <CardContent className="p-8">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3 mb-8">
+              <TabsList className="grid w-full grid-cols-4 mb-8">
+                <TabsTrigger value="info">Информация</TabsTrigger>
                 <TabsTrigger value="students">Студенты</TabsTrigger>
                 <TabsTrigger value="attendance">Посещаемость</TabsTrigger>
                 <TabsTrigger value="progress">Прогресс</TabsTrigger>
               </TabsList>
 
+              {/* Tab: Info */}
+              <TabsContent value="info">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium">Название группы</Label>
+                    <p className="mt-1 text-foreground">{group.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Программа обучения</Label>
+                    <p className="mt-1 text-foreground">{program?.title || "Не назначена"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Преподаватель</Label>
+                    <p className="mt-1 text-foreground">{teacher?.full_name || teacher?.email || "Не назначен"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Период обучения</Label>
+                    <p className="mt-1 text-foreground">
+                      {editStartDate && editEndDate
+                        ? `${new Date(editStartDate).toLocaleDateString("ru-RU")} - ${new Date(editEndDate).toLocaleDateString("ru-RU")}`
+                        : "Не указан"}
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+
               {/* Tab: Students */}
               <TabsContent value="students">
-                {students.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">Нет студентов в группе</div>
-                ) : (
-                  <div className="space-y-3">
-                    {students.map((student) => (
-                      <div key={student?.id} className="flex items-center gap-4 p-4 border border-border rounded-lg hover:bg-muted transition">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold">
-                          {student?.full_name?.charAt(0) || "?"}
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium">{student?.full_name}</div>
-                          <div className="text-sm text-muted-foreground">{student?.email}</div>
-                        </div>
+                <div className="space-y-4">
+                  <Button
+                    onClick={() => setAddStudentOpen(!addStudentOpen)}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Добавить студента
+                  </Button>
+
+                  {addStudentOpen && (
+                    <Card className="p-4">
+                      <div className="space-y-3">
+                        {availableStudents.length > 0 ? (
+                          availableStudents.map((student) => (
+                            <div key={student.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                              <div className="flex-1">
+                                <div className="font-medium">{student.full_name}</div>
+                                <div className="text-sm text-muted-foreground">{student.email}</div>
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  createEnrollmentMutation.mutate({
+                                    student_id: student.id,
+                                    group_id: group.id,
+                                  })
+                                }}
+                                disabled={createEnrollmentMutation.isPending}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-4">Нет доступных студентов</p>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                )}
+                    </Card>
+                  )}
+
+                  {students.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">Нет студентов в группе</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {students.map((student) => {
+                        const enrollment = enrollmentsData?.data.find((e) => e.student_id === student?.id && e.group_id === groupId)
+                        return (
+                          <div key={student?.id} className="flex items-center gap-4 p-4 border border-border rounded-lg">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold">
+                              {student?.full_name?.charAt(0) || "?"}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium">{student?.full_name}</div>
+                              <div className="text-sm text-muted-foreground">{student?.email}</div>
+                            </div>
+                            {enrollment && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => deleteEnrollmentMutation.mutate(enrollment.id)}
+                                disabled={deleteEnrollmentMutation.isPending}
+                                className="text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               {/* Tab: Attendance */}
@@ -358,25 +583,6 @@ function GroupDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Edit Panel */}
-        <RightPanel
-          isOpen={editOpen}
-          onClose={() => setEditOpen(false)}
-          title="Редактировать группу"
-          description="Измените данные группы"
-        >
-          {group && (
-            <GroupEditForm
-              group={group}
-              programs={programsData?.data ?? []}
-              teachers={usersData?.data.filter((u) => u.role === "TEACHER") ?? []}
-              onSubmit={(data) => updateGroupMutation.mutate({ id: group.id, data })}
-              onCancel={() => setEditOpen(false)}
-              isLoading={updateGroupMutation.isPending}
-            />
-          )}
-        </RightPanel>
-
         {/* Delete Dialog */}
         <ConfirmDeleteDialog
           open={deleteDialogOpen}
@@ -387,166 +593,5 @@ function GroupDetailPage() {
         />
       </div>
     </div>
-  )
-}
-
-function GroupEditForm({
-  group,
-  programs,
-  teachers,
-  onSubmit,
-  onCancel,
-  isLoading,
-}: {
-  group: Group
-  programs: any[]
-  teachers: UserPublic[]
-  onSubmit: (data: any) => void
-  onCancel: () => void
-  isLoading: boolean
-}) {
-  const [name, setName] = useState(group?.name ?? "")
-  const [programId, setProgramId] = useState(group?.program_id ?? "")
-  const [teacherId, setTeacherId] = useState(group?.teacher_id ?? "")
-  const [status, setStatus] = useState(group?.status ?? "planned")
-  const [startDate, setStartDate] = useState(group?.start_date ?? "")
-  const [endDate, setEndDate] = useState(group?.end_date ?? "")
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim() || !programId) return
-    onSubmit({
-      name: name.trim(),
-      program_id: programId,
-      teacher_id: teacherId || undefined,
-      status,
-      start_date: startDate || undefined,
-      end_date: endDate || undefined,
-    })
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <Label htmlFor="group-name" className="text-base font-semibold">
-          Название группы
-        </Label>
-        <Input
-          id="group-name"
-          placeholder="Введите название группы"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-2"
-          disabled={isLoading}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="program" className="text-base font-semibold">
-          Программа обучения
-        </Label>
-        {programs.length > 0 ? (
-          <Select value={programId} onValueChange={setProgramId} disabled={isLoading}>
-            <SelectTrigger id="program" className="mt-2">
-              <SelectValue placeholder="Выберите программу" />
-            </SelectTrigger>
-            <SelectContent>
-              {programs.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <div className="mt-2 p-2 text-sm text-destructive bg-destructive/10 rounded-md">
-            Нет доступных программ обучения
-          </div>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="teacher" className="text-base font-semibold">
-          Преподаватель
-        </Label>
-        <Select value={teacherId} onValueChange={setTeacherId} disabled={isLoading || teachers.length === 0}>
-          <SelectTrigger id="teacher" className="mt-2">
-            <SelectValue placeholder={teachers.length > 0 ? "Выберите преподавателя (опционально)" : "Нет доступных преподавателей"} />
-          </SelectTrigger>
-          <SelectContent>
-            {teachers.map((t) => (
-              <SelectItem key={t.id} value={t.id}>
-                {t.full_name || t.email}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="start-date" className="text-base font-semibold">
-            Начало
-          </Label>
-          <Input
-            id="start-date"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="mt-2"
-            disabled={isLoading}
-          />
-        </div>
-        <div>
-          <Label htmlFor="end-date" className="text-base font-semibold">
-            Конец
-          </Label>
-          <Input
-            id="end-date"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="mt-2"
-            disabled={isLoading}
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="status" className="text-base font-semibold">
-          Статус
-        </Label>
-        <Select value={status} onValueChange={setStatus} disabled={isLoading}>
-          <SelectTrigger id="status" className="mt-2">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="planned">Запланирована</SelectItem>
-            <SelectItem value="active">Активна</SelectItem>
-            <SelectItem value="finished">Завершена</SelectItem>
-            <SelectItem value="canceled">Отменена</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex gap-3 pt-4 border-t border-border">
-        <Button
-          type="submit"
-          disabled={isLoading || !name.trim() || !programId}
-          className="flex-1"
-        >
-          {isLoading ? "Сохранение..." : "Сохранить"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isLoading}
-          className="flex-1"
-        >
-          Отмена
-        </Button>
-      </div>
-    </form>
   )
 }
