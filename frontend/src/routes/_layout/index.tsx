@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input"
 import useAuth from "@/hooks/useAuth"
 import { StudentSchedule } from "@/components/StudentSchedule/StudentSchedule"
 import { TeacherTodayLessons } from "@/components/TeacherSchedule/TeacherTodayLessons"
+import { TeacherKPISection } from "@/components/TeacherSchedule/TeacherKPISection"
+import { TeacherLessonStats } from "@/components/TeacherSchedule/TeacherLessonStats"
 
 export const Route = createFileRoute("/_layout/")({
   component: Dashboard,
@@ -345,10 +347,19 @@ function Dashboard() {
       <TopBar />
       <Eyebrow />
       <HeroSection />
-      {isTeacher && <TeacherTodayLessons />}
-      <KPISection />
-      <ChartSection />
-      <ActivityFeed />
+      {isTeacher ? (
+        <>
+          <TeacherKPISection />
+          <TeacherTodayLessons />
+          <TeacherLessonStats />
+        </>
+      ) : (
+        <>
+          <KPISection />
+          <ChartSection />
+          <ActivityFeed />
+        </>
+      )}
       <Footer />
     </div>
   )
