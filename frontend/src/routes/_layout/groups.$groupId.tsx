@@ -847,7 +847,7 @@ function GroupDetailPage() {
                       <thead>
                         <tr className="border-b border-border">
                           <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Студент</th>
-                          {groupLessons.slice(0, 5).map((lesson) => {
+                          {groupLessons.map((lesson) => {
                             const date = new Date(lesson.scheduled_at)
                             const dateStr = date.toLocaleDateString("ru-RU", { month: "2-digit", day: "2-digit" })
                             return (
@@ -862,7 +862,7 @@ function GroupDetailPage() {
                         {students.map((student) => (
                           <tr key={student?.id} className="border-b border-border/50">
                             <td className="py-3 px-4 font-medium">{student?.full_name}</td>
-                            {groupLessons.slice(0, 5).map((lesson) => {
+                            {groupLessons.map((lesson) => {
                               const att = attendance.find(
                                 (a) => a.lesson_id === lesson.id && a.student_id === student?.id,
                               )
