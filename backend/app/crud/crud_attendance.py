@@ -156,19 +156,23 @@ def _check_module_completion(session: Session, student_id: UUID, module_id: UUID
         logger.info(f"No lessons found for module {module_id}")
         return
 
-    logger.info(f"Module {module_id} has {len(all_lessons)} total lessons")
+    lesson_ids = [l.id for l in all_lessons]
+    logger.info(f"Module {module_id} has {len(all_lessons)} total lessons: {lesson_ids}")
 
-    # Count attended lessons (present status)
+    # Count attended lessons (present status) - refresh session first
+    session.expire_all()
+
     attended = session.exec(
         select(Attendance).where(
             Attendance.student_id == student_id,
-            Attendance.lesson_id.in_([l.id for l in all_lessons]),
+            Attendance.lesson_id.in_(lesson_ids),
             Attendance.status == AttendanceStatus.present,
         )
     ).all()
 
     attended_count = len(attended)
-    logger.info(f"Student {student_id} attended {attended_count}/{len(all_lessons)} lessons in module {module_id}")
+    attended_lesson_ids = [a.lesson_id for a in attended]
+    logger.info(f"Student {student_id} attended {attended_count}/{len(all_lessons)} lessons. Attended lesson IDs: {attended_lesson_ids}")
 
     # If attended all lessons, mark module as completed
     if attended_count >= len(all_lessons):
@@ -180,11 +184,17 @@ def _check_module_completion(session: Session, student_id: UUID, module_id: UUID
             )
         ).first()
 
-        if progress and progress.status != ProgressStatus.COMPLETED:
-            progress.status = ProgressStatus.COMPLETED
-            session.add(progress)
-            session.commit()
-            logger.info(f"Module {module_id} marked as COMPLETED for student {student_id}")
+        if progress:
+            logger.info(f"Found progress record, current status: {progress.status}")
+            if progress.status != ProgressStatus.COMPLETED:
+                progress.status = ProgressStatus.COMPLETED
+                session.add(progress)
+                session.commit()
+                logger.info(f"✅ Module {module_id} marked as COMPLETED for student {student_id}")
+            else:
+                logger.info(f"Module already completed")
+        else:
+            logger.warning(f"No progress record found for student {student_id} in module {module_id}")
 
 
 def _award_points_for_attendance(session: Session, attendance: Attendance) -> None:
