@@ -44,7 +44,8 @@ function GroupDetailPage() {
   const [createSeriesOpen, setCreateSeriesOpen] = useState(false)
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null)
   const [recommendationStudentId, setRecommendationStudentId] = useState<string | null>(null)
-  const [recommendationText, setRecommendationText] = useState("")
+  const [recommendationProgramId, setRecommendationProgramId] = useState("")
+  const [recommendationComment, setRecommendationComment] = useState("")
 
   // Edit form state
   const [editName, setEditName] = useState("")
@@ -208,7 +209,8 @@ function GroupDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["recommendations"] })
       showSuccessToast("Рекомендация отправлена")
       setRecommendationStudentId(null)
-      setRecommendationText("")
+      setRecommendationProgramId("")
+      setRecommendationComment("")
     },
     onError: () => showErrorToast("Ошибка при отправке рекомендации"),
   })
@@ -568,7 +570,8 @@ function GroupDetailPage() {
                           variant="ghost"
                           onClick={() => {
                             setRecommendationStudentId(null)
-                            setRecommendationText("")
+                            setRecommendationProgramId("")
+                            setRecommendationComment("")
                           }}
                         >
                           <X className="h-4 w-4" />
@@ -576,26 +579,40 @@ function GroupDetailPage() {
                       </div>
                       <div className="space-y-4">
                         <div>
-                          <Label className="text-sm font-medium">Рекомендация</Label>
+                          <Label className="text-base font-semibold">Программа обучения</Label>
+                          <Select value={recommendationProgramId} onValueChange={setRecommendationProgramId}>
+                            <SelectTrigger className="mt-2">
+                              <SelectValue placeholder="Выберите программу" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {programsData?.data.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  {p.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-base font-semibold">Комментарий</Label>
                           <textarea
-                            value={recommendationText}
-                            onChange={(e) => setRecommendationText(e.target.value)}
-                            placeholder="Введите рекомендацию для студента..."
+                            value={recommendationComment}
+                            onChange={(e) => setRecommendationComment(e.target.value)}
+                            placeholder="Введите комментарий для студента..."
                             className="w-full min-h-32 mt-2 p-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                           />
                         </div>
                         <div className="flex gap-3 pt-4 border-t border-border">
                           <Button
                             onClick={() => {
-                              if (!recommendationText.trim()) {
-                                showErrorToast("Введите рекомендацию")
+                              if (!recommendationProgramId) {
+                                showErrorToast("Выберите программу")
                                 return
                               }
                               createRecommendationMutation.mutate({
                                 student_id: recommendationStudentId,
-                                module_id: null,
-                                content: recommendationText.trim(),
-                                recommendation_type: "general",
+                                program_id: recommendationProgramId,
+                                comment: recommendationComment.trim() || undefined,
                               })
                             }}
                             disabled={createRecommendationMutation.isPending}
@@ -608,7 +625,8 @@ function GroupDetailPage() {
                             variant="outline"
                             onClick={() => {
                               setRecommendationStudentId(null)
-                              setRecommendationText("")
+                              setRecommendationProgramId("")
+                              setRecommendationComment("")
                             }}
                             disabled={createRecommendationMutation.isPending}
                             className="flex-1"
