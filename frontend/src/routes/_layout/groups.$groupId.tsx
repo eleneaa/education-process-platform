@@ -243,7 +243,7 @@ function GroupDetailPage() {
                   <Label className="text-base font-semibold">Программа обучения</Label>
                   <Select value={editProgramId} onValueChange={setEditProgramId}>
                     <SelectTrigger className="mt-2">
-                      <SelectValue />
+                      <SelectValue placeholder="Выберите программу" />
                     </SelectTrigger>
                     <SelectContent>
                       {programsData?.data.map((p) => (
