@@ -796,8 +796,9 @@ function GroupDetailPage() {
                                     {dateStr} • {lesson.duration_minutes} мин
                                   </div>
                                   {lessonModule && (
-                                    <div className="text-xs text-muted-foreground mt-1">
-                                      📚 {lessonModule.title}
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                      <BookOpen className="h-3 w-3" />
+                                      {lessonModule.title}
                                     </div>
                                   )}
                                 </div>
@@ -867,7 +868,20 @@ function GroupDetailPage() {
                                 (a) => a.lesson_id === lesson.id && a.student_id === student?.id,
                               )
                               const status = att?.status ?? ("absent" as AttendanceStatus)
-                              const icon = status === "present" ? "✅" : status === "absent" ? "❌" : "⏰"
+                              let bgColor = "bg-red-200"
+                              let hoverColor = "hover:bg-red-300"
+                              let title = "Отсутствовал"
+
+                              if (status === "present") {
+                                bgColor = "bg-green-200"
+                                hoverColor = "hover:bg-green-300"
+                                title = "Присутствовал"
+                              } else if (status === "late") {
+                                bgColor = "bg-yellow-200"
+                                hoverColor = "hover:bg-yellow-300"
+                                title = "Опоздал"
+                              }
+
                               return (
                                 <td key={lesson.id} className="text-center py-3 px-2">
                                   <button
@@ -887,11 +901,9 @@ function GroupDetailPage() {
                                         })
                                       }
                                     }}
-                                    className="text-xl hover:scale-125 transition cursor-pointer"
-                                    title={`Статус: ${status}`}
-                                  >
-                                    {icon}
-                                  </button>
+                                    className={`w-6 h-6 rounded ${bgColor} ${hoverColor} transition cursor-pointer`}
+                                    title={title}
+                                  ></button>
                                 </td>
                               )
                             })}
@@ -899,6 +911,22 @@ function GroupDetailPage() {
                         ))}
                       </tbody>
                     </table>
+
+                    {/* Legend */}
+                    <div className="flex gap-6 mt-6 p-4 bg-muted rounded text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-green-200"></div>
+                        <span>Присутствовал</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-yellow-200"></div>
+                        <span>Опоздал</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-red-200"></div>
+                        <span>Отсутствовал</span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </TabsContent>
