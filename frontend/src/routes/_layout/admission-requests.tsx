@@ -304,8 +304,25 @@ function KanbanColumn({
   onCreateUser,
   admins,
 }: KanbanColumnProps) {
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    const draggedId = e.dataTransfer.getData("requestId")
+    if (draggedId) {
+      onStatusChange(draggedId, status)
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 min-w-80">
+    <div
+      className="flex flex-col flex-1 min-w-80"
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {/* Column Header */}
       <div className="flex items-center gap-3 pb-4 mb-4 border-b border-hair">
         <span className="label-sm text-mute">0{index + 1} ЭТАП</span>
@@ -316,7 +333,12 @@ function KanbanColumn({
       {/* Cards */}
       <div className="flex flex-col gap-3 flex-1">
         {requests.map((req) => (
-          <Card key={req.id} className="border-hair rounded-2xl p-4 flex flex-col gap-3 hover:shadow-sm transition-shadow">
+          <Card
+            key={req.id}
+            className="border-hair rounded-2xl p-4 flex flex-col gap-3 hover:shadow-sm transition-shadow cursor-move"
+            draggable
+            onDragStart={(e) => e.dataTransfer.setData("requestId", req.id)}
+          >
             {/* Header: ID + Date */}
             <div className="flex items-start justify-between gap-2">
               <span className="mono text-xs text-mute">#{req.id.slice(0, 8)}</span>
@@ -374,22 +396,10 @@ function KanbanColumn({
               </div>
             )}
 
-            {/* Footer: Source + Status change */}
+            {/* Footer: Source */}
             <div className="flex items-center justify-between pt-2 border-t border-hair">
               <span className="label-sm text-mute">{SOURCE_LABELS[req.source] || req.source}</span>
-              {status !== "approved" && (
-                <Select value={status} onValueChange={(newStatus) => onStatusChange(req.id, newStatus)}>
-                  <SelectTrigger className="w-fit h-8 border-0 bg-transparent p-0">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new">Новые</SelectItem>
-                    <SelectItem value="in_review">На проверке</SelectItem>
-                    <SelectItem value="approved">Одобрена</SelectItem>
-                    <SelectItem value="rejected">Отклонена</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+              <span className="label-sm text-mute text-xs">⋮⋮⋮ перетащи</span>
             </div>
           </Card>
         ))}
