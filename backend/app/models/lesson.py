@@ -5,6 +5,7 @@ from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import DateTime, Text
 
 from .group import Group
+from .module import Module
 from .utils import get_datetime_utc
 
 
@@ -15,6 +16,7 @@ class LessonBase(SQLModel):
     duration_minutes: int = Field(default=90)
     location: str | None = Field(default=None, max_length=255)
     series_id: uuid.UUID | None = Field(default=None)
+    module_id: uuid.UUID | None = Field(default=None)
 
 
 class LessonCreate(LessonBase):
@@ -52,3 +54,11 @@ class Lesson(LessonBase, table=True):
         ondelete="CASCADE",
     )
     group: Group | None = Relationship()
+
+    module_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="module.id",
+        nullable=True,
+        ondelete="SET NULL",
+    )
+    module: Module | None = Relationship()
