@@ -343,14 +343,14 @@ function KanbanColumn({
               <div className="pt-2">
                 <Label className="text-xs font-medium">Ответственный</Label>
                 <Select
-                  value={req.assigned_to_id || ""}
-                  onValueChange={(value) => onAssignedToChange(req.id, value || null)}
+                  value={req.assigned_to_id || "_none"}
+                  onValueChange={(value) => onAssignedToChange(req.id, value === "_none" ? null : value)}
                 >
                   <SelectTrigger className="mt-1 h-8">
                     <SelectValue placeholder="Выберите..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Не назначен</SelectItem>
+                    <SelectItem value="_none">Не назначен</SelectItem>
                     {admins.map((admin) => (
                       <SelectItem key={admin.id} value={admin.id}>
                         {admin.full_name || admin.email}
