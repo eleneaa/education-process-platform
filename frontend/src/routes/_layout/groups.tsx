@@ -341,10 +341,21 @@ function GroupCard({
   }
 
   const color = getGroupColor(group.id)
+  const borderColors: Record<string, string> = {
+    "border-blue-600": "#2563eb",
+    "border-purple-600": "#9333ea",
+    "border-cyan-600": "#0891b2",
+    "border-emerald-600": "#059669",
+    "border-amber-600": "#b45309",
+    "border-pink-600": "#db2777",
+  }
 
   return (
     <>
-      <Card className={`group overflow-hidden rounded-2xl backdrop-blur-xl border-l-4 ${color.border} border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}>
+      <Card
+        className="group overflow-hidden rounded-2xl backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+        style={{ borderLeft: `4px solid ${borderColors[color.border]}` }}
+      >
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex-1 min-w-0">
