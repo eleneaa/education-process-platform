@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   Users,
   Pencil,
@@ -388,15 +388,16 @@ function GroupCard({
           </div>
 
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onManageStudents(group)}
-              className="flex-1 text-xs"
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Студенты
-            </Button>
+            <Link to={`/groups/${group.id}`} className="flex-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="flex-1 text-xs"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Студенты
+              </Button>
+            </Link>
             <Button
               size="sm"
               variant="ghost"
