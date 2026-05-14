@@ -432,7 +432,7 @@ function AdmissionRequestsPage() {
   })
 
   const requests = requestsResponse?.data ?? []
-  const admins = (adminsResponse?.data ?? []).filter((u: any) => u.role === "ADMIN" || u.role === "TEACHER")
+  const admins = (adminsResponse?.data ?? []).filter((u: any) => u.role === "ADMIN")
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
