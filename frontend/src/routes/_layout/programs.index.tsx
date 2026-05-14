@@ -60,21 +60,6 @@ function getStatusChipVariant(status: string): "default" | "secondary" | "destru
   }
 }
 
-interface KPIBarProps {
-  value: number
-  label: string
-}
-
-function KPIBar({ value, label }: KPIBarProps) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="label-sm">{label}</div>
-      <div className="mono text-2xl font-light" style={{ letterSpacing: "-0.04em" }}>
-        {value}
-      </div>
-    </div>
-  )
-}
 
 interface ProgramCardProps {
   program: Program
@@ -273,9 +258,11 @@ function ProgramsPage() {
   const [search, setSearch] = useState("")
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<"approved" | "on_review" | "draft" | "rejected" | "all">("approved")
 
   const isTeacher = currentUser?.role?.toLowerCase() === "teacher"
   const isAdmin = currentUser?.role?.toLowerCase() === "admin" || currentUser?.is_superuser
+  const isStudent = currentUser?.role?.toLowerCase() === "student"
 
   const { data: programsResponse } = useQuery({
     queryKey: ["programs"],
@@ -338,20 +325,24 @@ function ProgramsPage() {
     onError: () => showErrorToast("Ошибка при отклонении"),
   })
 
-  const kpiByStatus = useMemo(() => {
-    return {
-      draft: programs.filter((p) => p.status === "draft").length,
-      on_review: programs.filter((p) => p.status === "on_review").length,
-      approved: programs.filter((p) => p.status === "approved").length,
-      rejected: programs.filter((p) => p.status === "rejected").length,
+  const visiblePrograms = useMemo(() => {
+    if (isStudent) {
+      return programs.filter((p) => p.status === "approved")
     }
-  }, [programs])
+    return programs
+  }, [programs, isStudent])
 
   const filteredPrograms = useMemo(() => {
-    if (!search) return programs
-    const q = search.toLowerCase()
-    return programs.filter((p) => p.title.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q))
-  }, [search, programs])
+    let filtered = visiblePrograms
+    if (search) {
+      const q = search.toLowerCase()
+      filtered = filtered.filter((p) => p.title.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q))
+    }
+    if (statusFilter !== "all" && (isTeacher || isAdmin)) {
+      filtered = filtered.filter((p) => p.status === statusFilter)
+    }
+    return filtered
+  }, [visiblePrograms, search, statusFilter, isTeacher, isAdmin])
 
   const handleCreateProgram = () => {
     setCreateDialogOpen(true)
@@ -402,10 +393,12 @@ function ProgramsPage() {
                 </Button>
               </>
             )}
-            <Button onClick={handleCreateProgram} size="sm" className="gap-2">
-              <Plus className="w-4 h-4" />
-              Создать
-            </Button>
+            {(isTeacher || isAdmin) && (
+              <Button onClick={handleCreateProgram} size="sm" className="gap-2">
+                <Plus className="w-4 h-4" />
+                Создать
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -416,19 +409,43 @@ function ProgramsPage() {
 
       <div className="px-10 py-8">
         <h1 className="display-hero mb-2">
-          <em className="not-italic text-accent font-medium">{programs.length}</em> программы подготовки.
+          <em className="not-italic text-accent font-medium">{visiblePrograms.length}</em> программ{visiblePrograms.length % 10 === 1 && visiblePrograms.length % 100 !== 11 ? "а" : visiblePrograms.length % 10 < 5 && visiblePrograms.length % 100 > 10 ? "ы" : ""}.
         </h1>
-        <p className="body-md text-mute max-w-2xl">Полный каталог образовательных программ.</p>
+        <p className="body-md text-mute max-w-2xl">
+          {isStudent ? "Доступные образовательные программы" : "Полный каталог образовательных программ"}
+        </p>
       </div>
 
-      {!isTeacher && (
-        <div className="px-10">
-          <div className="grid grid-cols-4 gap-0 py-6 border-y border-hair">
-            <KPIBar value={kpiByStatus.draft} label="ЧЕРНОВИК" />
-            <KPIBar value={kpiByStatus.on_review} label="НА ПРОВЕРКЕ" />
-            <KPIBar value={kpiByStatus.approved} label="ОДОБРЕНА" />
-            <KPIBar value={kpiByStatus.rejected} label="ОТКЛОНЕНА" />
-          </div>
+      {!isStudent && (isTeacher || isAdmin) && (
+        <div className="px-10 py-4 flex items-center gap-2">
+          <Button
+            size="sm"
+            variant={statusFilter === "approved" ? "default" : "outline"}
+            onClick={() => setStatusFilter("approved")}
+          >
+            Одобренные
+          </Button>
+          <Button
+            size="sm"
+            variant={statusFilter === "on_review" ? "default" : "outline"}
+            onClick={() => setStatusFilter("on_review")}
+          >
+            Заявки
+          </Button>
+          <Button
+            size="sm"
+            variant={statusFilter === "draft" ? "default" : "outline"}
+            onClick={() => setStatusFilter("draft")}
+          >
+            Черновики
+          </Button>
+          <Button
+            size="sm"
+            variant={statusFilter === "rejected" ? "default" : "outline"}
+            onClick={() => setStatusFilter("rejected")}
+          >
+            Отклоненные
+          </Button>
         </div>
       )}
 
