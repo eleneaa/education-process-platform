@@ -1,7 +1,7 @@
 from uuid import UUID
 from sqlmodel import Session, select
 from app.models import Attendance, AttendanceCreate, AttendanceUpdate, AttendanceStatus, Lesson, Progress, ProgressCreate
-from app.models.enums import ProgressStatus
+from app.models.enums import ProgressStatus, UserRole
 
 
 def create_attendance(
@@ -13,6 +13,11 @@ def create_attendance(
     session.add(db_obj)
     session.commit()
     session.refresh(db_obj)
+
+    # Award points for attendance
+    if db_obj.status == AttendanceStatus.present:
+        _award_points_for_attendance(session, db_obj)
+
     return db_obj
 
 
@@ -75,6 +80,10 @@ def update_attendance(
     # Update progress if lesson has module
     _update_progress_from_attendance(session, db_attendance)
 
+    # Award points for attendance
+    if db_attendance.status == AttendanceStatus.present:
+        _award_points_for_attendance(session, db_attendance)
+
     return db_attendance
 
 
@@ -131,6 +140,13 @@ def _update_progress_from_attendance(session: Session, attendance: Attendance) -
     session.commit()
 
 
+def _award_points_for_attendance(session: Session, attendance: Attendance) -> None:
+    """Award points when a student marks present."""
+    from app.crud.crud_gamification import add_points
+
+    add_points(session=session, user_id=attendance.student_id, points=1)
+
+
 def create_or_update_attendance(
     *,
     session: Session,
@@ -150,6 +166,8 @@ def create_or_update_attendance(
         session.commit()
         session.refresh(existing)
         _update_progress_from_attendance(session, existing)
+        if existing.status == AttendanceStatus.present:
+            _award_points_for_attendance(session, existing)
         return existing
 
     attendance_create = AttendanceCreate(
@@ -159,4 +177,6 @@ def create_or_update_attendance(
     )
     new_attendance = create_attendance(session=session, attendance_create=attendance_create)
     _update_progress_from_attendance(session, new_attendance)
+    if new_attendance.status == AttendanceStatus.present:
+        _award_points_for_attendance(session, new_attendance)
     return new_attendance

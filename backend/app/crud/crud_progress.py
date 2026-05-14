@@ -61,13 +61,25 @@ def update_progress(
     update_data = progress_in.model_dump(exclude_unset=True)
     update_data["updated_at"] = get_datetime_utc()
 
+    old_status = db_progress.status
     db_progress.sqlmodel_update(update_data)
 
     session.add(db_progress)
     session.commit()
     session.refresh(db_progress)
 
+    # Award points when module is completed
+    if old_status != ProgressStatus.COMPLETED and db_progress.status == ProgressStatus.COMPLETED:
+        _award_points_for_completed_module(session, db_progress)
+
     return db_progress
+
+
+def _award_points_for_completed_module(session: Session, progress: Progress) -> None:
+    """Award points when a student completes a module."""
+    from app.crud.crud_gamification import add_points
+
+    add_points(session=session, user_id=progress.student_id, points=10)
 
 
 def delete_progress(
