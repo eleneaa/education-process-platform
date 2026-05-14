@@ -164,6 +164,7 @@ function GroupDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lessons"] })
       queryClient.invalidateQueries({ queryKey: ["attendance", groupId] })
+      showSuccessToast("Урок создан")
     },
     onError: () => showErrorToast("Ошибка при создании урока"),
   })
@@ -442,11 +443,10 @@ function GroupDetailPage() {
         <Card>
           <CardContent className="p-8">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4 mb-8">
+              <TabsList className="grid w-full grid-cols-3 mb-8">
                 <TabsTrigger value="students">Студенты</TabsTrigger>
                 <TabsTrigger value="lessons">Уроки</TabsTrigger>
                 <TabsTrigger value="attendance">Посещаемость</TabsTrigger>
-                <TabsTrigger value="progress">Прогресс</TabsTrigger>
               </TabsList>
 
               {/* Tab: Students */}
@@ -903,104 +903,6 @@ function GroupDetailPage() {
                 )}
               </TabsContent>
 
-              {/* Tab: Progress */}
-              <TabsContent value="progress">
-                {modules.length === 0 || students.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">Нет данных для отображения</div>
-                ) : (
-                  <div className="space-y-6">
-                    {/* Group Summary */}
-                    <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-                      <h3 className="text-lg font-semibold mb-4">Прогресс группы</h3>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <div className="text-3xl font-bold text-blue-600">
-                            {Math.round(
-                              progresses.filter((p) => p.status === "COMPLETED").length /
-                                (students.length * modules.length) *
-                                100
-                            )}%
-                          </div>
-                          <div className="text-sm text-muted-foreground">Средний прогресс</div>
-                        </div>
-                        <div>
-                          <div className="text-3xl font-bold text-green-600">
-                            {progresses.filter((p) => p.status === "COMPLETED").length}/{students.length * modules.length}
-                          </div>
-                          <div className="text-sm text-muted-foreground">Модулей завершено</div>
-                        </div>
-                        <div>
-                          <div className="text-3xl font-bold text-amber-600">
-                            {students.filter((s) =>
-                              progresses.some(
-                                (p) =>
-                                  p.student_id === s?.id &&
-                                  (p.status === "COMPLETED" || p.status === "IN_PROGRESS")
-                              )
-                            ).length}/{students.length}
-                          </div>
-                          <div className="text-sm text-muted-foreground">Студентов в процессе</div>
-                        </div>
-                      </div>
-                    </Card>
-
-                    {/* Students Progress */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Прогресс студентов</h3>
-                      <div className="space-y-3">
-                        {students.map((student) => {
-                          const studentProgress = progresses.filter((p) => p.student_id === student?.id)
-                          const completedCount = studentProgress.filter((p) => p.status === "COMPLETED").length
-                          const inProgressCount = studentProgress.filter((p) => p.status === "IN_PROGRESS").length
-                          const progressPercent = Math.round((completedCount / modules.length) * 100)
-
-                          let statusColor = "bg-gray-100 text-gray-700"
-                          let statusText = "Не начинал"
-
-                          if (progressPercent === 100) {
-                            statusColor = "bg-green-100 text-green-700"
-                            statusText = "✅ Завершено"
-                          } else if (inProgressCount > 0) {
-                            statusColor = "bg-blue-100 text-blue-700"
-                            statusText = "🔄 В процессе"
-                          } else if (completedCount > 0) {
-                            statusColor = "bg-amber-100 text-amber-700"
-                            statusText = "⏸️ Частично"
-                          }
-
-                          return (
-                            <div
-                              key={student?.id}
-                              className="p-4 border border-border rounded-lg hover:bg-muted/50 transition"
-                            >
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex-1">
-                                  <div className="font-medium">{student?.full_name}</div>
-                                  <div className="text-sm text-muted-foreground">{student?.email}</div>
-                                </div>
-                                <div className={`px-3 py-1 rounded-full text-sm font-medium ${statusColor}`}>
-                                  {statusText}
-                                </div>
-                              </div>
-
-                              <div className="w-full bg-muted rounded-full h-2 mb-2">
-                                <div
-                                  className="bg-blue-500 h-2 rounded-full transition-all"
-                                  style={{ width: `${progressPercent}%` }}
-                                ></div>
-                              </div>
-
-                              <div className="text-xs text-muted-foreground">
-                                {completedCount} ✅ | {inProgressCount} 🔄 | {modules.length - completedCount - inProgressCount} ⬜ из {modules.length} модулей
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
