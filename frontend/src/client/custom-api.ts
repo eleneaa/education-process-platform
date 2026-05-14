@@ -365,6 +365,7 @@ export async function updateLesson(id: string, body: {
   scheduled_at?: string
   duration_minutes?: number
   location?: string | null
+  module_id?: string | null
 }): Promise<Lesson> {
   const { data } = await api.patch<Lesson>(`/lessons/${id}`, body)
   return data

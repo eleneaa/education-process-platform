@@ -3,7 +3,7 @@ import { createFileRoute, useParams, Link, useNavigate } from "@tanstack/react-r
 import { ArrowLeft, BookOpen, Users, Pencil, Trash2, X, Check, Plus } from "lucide-react"
 import { useState, useMemo } from "react"
 
-import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, createAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup, createEnrollment, deleteEnrollment, createLesson, deleteLesson } from "@/client/custom-api"
+import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, createAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup, createEnrollment, deleteEnrollment, createLesson, deleteLesson, updateLesson } from "@/client/custom-api"
 import type { Attendance, AttendanceStatus, Lesson, Group } from "@/client/custom-types"
 import type { UserPublic } from "@/client/types.gen"
 import { Button } from "@/components/ui/button"
@@ -32,6 +32,7 @@ function GroupDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [addStudentOpen, setAddStudentOpen] = useState(false)
   const [createSeriesOpen, setCreateSeriesOpen] = useState(false)
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null)
 
   // Edit form state
   const [editName, setEditName] = useState("")
@@ -48,6 +49,13 @@ function GroupDetailPage() {
   const [seriesCount, setSeriesCount] = useState("4")
   const [seriesInterval, setSeriesInterval] = useState("1") // days
   const [seriesDuration, setSeriesDuration] = useState("90")
+
+  // Edit lesson form state
+  const [editLessonTitle, setEditLessonTitle] = useState("")
+  const [editLessonModuleId, setEditLessonModuleId] = useState("")
+  const [editLessonDate, setEditLessonDate] = useState("")
+  const [editLessonTime, setEditLessonTime] = useState("")
+  const [editLessonDuration, setEditLessonDuration] = useState("")
 
   const { data: groupsData } = useQuery({
     queryKey: ["groups"],
@@ -168,6 +176,17 @@ function GroupDetailPage() {
       showSuccessToast("Урок удален")
     },
     onError: () => showErrorToast("Ошибка при удалении урока"),
+  })
+
+  const updateLessonMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => updateLesson(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lessons"] })
+      queryClient.invalidateQueries({ queryKey: ["attendance", groupId] })
+      showSuccessToast("Урок обновлен")
+      setEditingLessonId(null)
+    },
+    onError: () => showErrorToast("Ошибка при обновлении урока"),
   })
 
   const group = useMemo(
@@ -668,28 +687,148 @@ function GroupDetailPage() {
                           minute: "2-digit",
                         })
                         const lessonModule = modules.find((m) => m.id === lesson.module_id)
+                        const isEditing = editingLessonId === lesson.id
+
                         return (
-                          <div key={lesson.id} className="flex items-center gap-4 p-4 border border-border rounded-lg">
-                            <div className="flex-1">
-                              <div className="font-medium">{lesson.title}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {dateStr} • {lesson.duration_minutes} мин
-                              </div>
-                              {lessonModule && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  📚 {lessonModule.title}
+                          <div key={lesson.id} className="border border-border rounded-lg">
+                            {isEditing ? (
+                              <div className="p-4 space-y-4 bg-muted/50">
+                                <div>
+                                  <Label className="text-sm font-medium">Название</Label>
+                                  <Input
+                                    value={editLessonTitle}
+                                    onChange={(e) => setEditLessonTitle(e.target.value)}
+                                    className="mt-1"
+                                  />
                                 </div>
-                              )}
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => deleteLessonMutation.mutate(lesson.id)}
-                              disabled={deleteLessonMutation.isPending}
-                              className="text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+
+                                <div>
+                                  <Label className="text-sm font-medium">Модуль</Label>
+                                  <Select value={editLessonModuleId} onValueChange={setEditLessonModuleId}>
+                                    <SelectTrigger className="mt-1">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {modules.map((m) => (
+                                        <SelectItem key={m.id} value={m.id}>
+                                          {m.title}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-4">
+                                  <div>
+                                    <Label className="text-sm font-medium">Дата</Label>
+                                    <Input
+                                      type="date"
+                                      value={editLessonDate}
+                                      onChange={(e) => setEditLessonDate(e.target.value)}
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">Время</Label>
+                                    <Input
+                                      type="time"
+                                      value={editLessonTime}
+                                      onChange={(e) => setEditLessonTime(e.target.value)}
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">Длительность (мин)</Label>
+                                    <Input
+                                      type="number"
+                                      value={editLessonDuration}
+                                      onChange={(e) => setEditLessonDuration(e.target.value)}
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="flex gap-3 pt-2 border-t border-border">
+                                  <Button
+                                    onClick={() => {
+                                      if (!editLessonTitle.trim()) {
+                                        showErrorToast("Заполните название")
+                                        return
+                                      }
+                                      const [year, month, day] = editLessonDate.split("-").map(Number)
+                                      const [hours, minutes] = editLessonTime.split(":").map(Number)
+                                      const scheduledAt = new Date(year, month - 1, day, hours, minutes).toISOString()
+
+                                      updateLessonMutation.mutate({
+                                        id: lesson.id,
+                                        data: {
+                                          title: editLessonTitle.trim(),
+                                          module_id: editLessonModuleId,
+                                          scheduled_at: scheduledAt,
+                                          duration_minutes: parseInt(editLessonDuration),
+                                        },
+                                      })
+                                    }}
+                                    disabled={updateLessonMutation.isPending}
+                                    size="sm"
+                                    className="flex-1 gap-2"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                    Сохранить
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => setEditingLessonId(null)}
+                                    disabled={updateLessonMutation.isPending}
+                                    size="sm"
+                                    className="flex-1 gap-2"
+                                  >
+                                    <X className="h-4 w-4" />
+                                    Отмена
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-4 p-4">
+                                <div className="flex-1">
+                                  <div className="font-medium">{lesson.title}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {dateStr} • {lesson.duration_minutes} мин
+                                  </div>
+                                  {lessonModule && (
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                      📚 {lessonModule.title}
+                                    </div>
+                                  )}
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingLessonId(lesson.id)
+                                    setEditLessonTitle(lesson.title)
+                                    setEditLessonModuleId(lesson.module_id || "")
+                                    const date = new Date(lesson.scheduled_at)
+                                    setEditLessonDate(date.toISOString().split("T")[0])
+                                    setEditLessonTime(
+                                      `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
+                                    )
+                                    setEditLessonDuration(String(lesson.duration_minutes))
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => deleteLessonMutation.mutate(lesson.id)}
+                                  disabled={deleteLessonMutation.isPending}
+                                  className="text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         )
                       })}
