@@ -519,10 +519,6 @@ function GroupsPage() {
     })
   }
 
-  const filteredGroups = groups.filter((g) =>
-    g.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
   const getGroupStudents = (groupId: string) =>
     enrollments.filter((e) => e.group_id === groupId)
 
@@ -537,6 +533,10 @@ function GroupsPage() {
   const groupEnrollmentIds = managingGroup
     ? new Set(getGroupStudents(managingGroup.id).map((e) => e.student_id))
     : new Set<string>()
+
+  const filteredGroups = groups.filter((g) =>
+    g.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   const handleToggleGroupForExport = (groupId: string) => {
     const updated = new Set(selectedGroupsForExport)
