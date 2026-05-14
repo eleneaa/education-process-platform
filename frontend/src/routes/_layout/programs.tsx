@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Search, Upload, FileDown, Plus, Pencil, Layers, Send, CheckCircle, XCircle } from "lucide-react"
+import { Search, Upload, FileDown, Plus, Pencil, Layers, Send, CheckCircle, XCircle, ArrowLeft } from "lucide-react"
 import { useState, useMemo } from "react"
 
 import { getPrograms, getModules, getGroups, updateProgram, createProgram, deleteProgram, importProgramsCSV, importModulesCSV, submitProgramForReview } from "@/client/custom-api"
@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ImportDialog } from "@/components/Common/ImportDialog"
 import { ExportPDFDialog, type ExportColumn } from "@/components/Common/ExportPDFDialog"
@@ -81,7 +80,6 @@ interface ProgramCardProps {
   program: Program
   moduleCount: number
   groupCount: number
-  onEdit: (program: Program) => void
   isTeacher: boolean
   onSubmitForReview?: (programId: string) => void
   onApprove?: (programId: string) => void
@@ -93,7 +91,6 @@ function ProgramCard({
   program,
   moduleCount,
   groupCount,
-  onEdit,
   isTeacher,
   onSubmitForReview,
   onApprove,
@@ -141,15 +138,16 @@ function ProgramCard({
         </div>
 
         <div className="flex gap-2 mt-auto flex-wrap">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onEdit(program)}
-            className="gap-1"
-          >
-            <Pencil className="h-4 w-4" />
-            Редакт.
-          </Button>
+          <Link to="/programs_/$programId" params={{ programId: program.id }}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1"
+            >
+              <Pencil className="h-4 w-4" />
+              Редакт.
+            </Button>
+          </Link>
 
           {isTeacher && status === "draft" && onSubmitForReview && (
             <Button
@@ -194,38 +192,33 @@ function ProgramCard({
   )
 }
 
-function ProgramFormDialog({
+function QuickCreateProgramDialog({
   open,
   onOpenChange,
-  program,
   onSubmit,
   isLoading,
-  isTeacher = false,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
-  program?: Program
-  onSubmit: (data: { title: string; description: string | null; status: string }) => void
+  onSubmit: (data: { title: string; description: string | null }) => void
   isLoading: boolean
-  isTeacher?: boolean
 }) {
-  const [title, setTitle] = useState(program?.title ?? "")
-  const [description, setDescription] = useState(program?.description ?? "")
-  const [status, setStatus] = useState(program?.status ?? "draft")
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
-    // Teachers always use DRAFT or ON_REVIEW status, never APPROVED/REJECTED
-    const finalStatus = isTeacher && (status === "approved" || status === "rejected") ? "draft" : status
-    onSubmit({ title: title.trim(), description: description || null, status: finalStatus })
+    onSubmit({ title: title.trim(), description: description.trim() || null })
+    setTitle("")
+    setDescription("")
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{program ? "Редактировать программу" : "Создать программу"}</DialogTitle>
+          <DialogTitle>Создать программу</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -237,6 +230,7 @@ function ProgramFormDialog({
               placeholder="Название программы"
               className="mt-1"
               required
+              autoFocus
             />
           </div>
           <div>
@@ -245,32 +239,16 @@ function ProgramFormDialog({
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Описание"
-              className="mt-1 w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground min-h-20 resize-none"
+              placeholder="Описание программы"
+              className="mt-1 w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground min-h-16 resize-none"
             />
           </div>
-          {!isTeacher && (
-            <div>
-              <Label htmlFor="status">Статус</Label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger id="status" className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Черновик</SelectItem>
-                  <SelectItem value="on_review">На проверке</SelectItem>
-                  <SelectItem value="approved">Одобрена</SelectItem>
-                  <SelectItem value="rejected">Отклонена</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Отмена
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Сохранение..." : program ? "Сохранить" : "Создать"}
+            <Button type="submit" disabled={isLoading || !title.trim()}>
+              {isLoading ? "Создание..." : "Создать"}
             </Button>
           </DialogFooter>
         </form>
@@ -289,10 +267,10 @@ const PROGRAM_EXPORT_COLUMNS: ExportColumn[] = [
 function ProgramsPage() {
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const { user: currentUser } = useAuth()
   const [search, setSearch] = useState("")
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingProgram, setEditingProgram] = useState<Program | undefined>()
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
 
   const isTeacher = currentUser?.role?.toLowerCase() === "teacher"
@@ -318,24 +296,14 @@ function ProgramsPage() {
   const groups = groupsResponse?.data ?? []
 
   const createMutation = useMutation({
-    mutationFn: createProgram,
-    onSuccess: () => {
+    mutationFn: (data: { title: string; description: string | null }) => createProgram(data),
+    onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ["programs"] })
       showSuccessToast("Программа создана")
-      setFormOpen(false)
+      setCreateDialogOpen(false)
+      navigate({ to: "/programs_/$programId", params: { programId: created.id } })
     },
     onError: () => showErrorToast("Ошибка при создании"),
-  })
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateProgram(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] })
-      showSuccessToast("Программа обновлена")
-      setFormOpen(false)
-      setEditingProgram(undefined)
-    },
-    onError: () => showErrorToast("Ошибка при обновлении"),
   })
 
   const submitForReviewMutation = useMutation({
@@ -381,21 +349,7 @@ function ProgramsPage() {
   }, [search, programs])
 
   const handleCreateProgram = () => {
-    setEditingProgram(undefined)
-    setFormOpen(true)
-  }
-
-  const handleEditProgram = (program: Program) => {
-    setEditingProgram(program)
-    setFormOpen(true)
-  }
-
-  const handleSubmit = (data: any) => {
-    if (editingProgram) {
-      updateMutation.mutate({ id: editingProgram.id, data })
-    } else {
-      createMutation.mutate(data)
-    }
+    setCreateDialogOpen(true)
   }
 
   const getModuleCount = (programId: string) => modules.filter((m) => m.program_id === programId).length
@@ -482,7 +436,6 @@ function ProgramsPage() {
                   program={program}
                   moduleCount={getModuleCount(program.id)}
                   groupCount={getGroupCount(program.id)}
-                  onEdit={handleEditProgram}
                   isTeacher={isTeacher}
                   onSubmitForReview={isTeacher ? (id) => submitForReviewMutation.mutate(id) : undefined}
                   onApprove={isAdmin ? (id) => approveMutation.mutate(id) : undefined}
@@ -499,13 +452,11 @@ function ProgramsPage() {
         )}
       </div>
 
-      <ProgramFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        program={editingProgram}
-        onSubmit={handleSubmit}
-        isLoading={createMutation.isPending || updateMutation.isPending}
-        isTeacher={isTeacher}
+      <QuickCreateProgramDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSubmit={(data) => createMutation.mutate(data)}
+        isLoading={createMutation.isPending}
       />
 
       {!isTeacher && (
