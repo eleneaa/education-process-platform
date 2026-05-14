@@ -29,6 +29,7 @@ class LessonUpdate(SQLModel):
     scheduled_at: datetime | None = None
     duration_minutes: int | None = None
     location: str | None = None
+    module_id: uuid.UUID | None = None
 
 
 class LessonPublic(LessonBase):
