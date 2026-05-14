@@ -353,66 +353,65 @@ function GroupCard({
 
   return (
     <div>
-      <Link to="/groups/$groupId" params={{ groupId: group.id }}>
-        <Card
-          className="group overflow-hidden rounded-2xl backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-          style={{ borderLeft: `4px solid ${borderColors[color.border]}` }}
-        >
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors truncate">
-                {group.name}
-              </h3>
-              {programTitle && (
-                <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  {programTitle}
-                </p>
-              )}
-              {group.teacher_name && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Преподаватель: {group.teacher_name}
-                </p>
-              )}
+      <Card
+        className="group overflow-hidden rounded-2xl backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+        style={{ borderLeft: `4px solid ${borderColors[color.border]}` }}
+      >
+        <Link to="/groups/$groupId" params={{ groupId: group.id }} className="block cursor-pointer">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors truncate">
+                  {group.name}
+                </h3>
+                {programTitle && (
+                  <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    {programTitle}
+                  </p>
+                )}
+                {group.teacher_name && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Преподаватель: {group.teacher_name}
+                  </p>
+                )}
+              </div>
+              <Users className="h-6 w-6 text-primary/40 shrink-0" />
             </div>
-            <Users className="h-6 w-6 text-primary/40 shrink-0" />
-          </div>
 
-          <div className="flex items-center gap-2 mb-4">
-            <Badge variant={statusColor[group.status || "active"] as any}>
-              {statusLabel[group.status as keyof typeof statusLabel] || group.status}
-            </Badge>
-            <Badge variant="outline">
-              <Users className="h-3 w-3 mr-1" />
-              {studentCount} студентов
-            </Badge>
-          </div>
+            <div className="flex items-center gap-2 mb-4">
+              <Badge variant={statusColor[group.status || "active"] as any}>
+                {statusLabel[group.status as keyof typeof statusLabel] || group.status}
+              </Badge>
+              <Badge variant="outline">
+                <Users className="h-3 w-3 mr-1" />
+                {studentCount} студентов
+              </Badge>
+            </div>
+          </CardContent>
+        </Link>
 
-        </CardContent>
-        </Card>
-      </Link>
-
-      <div className="flex gap-2 mt-3">
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => onEdit(group)}
-          className="flex-1 text-xs"
-        >
-          <Pencil className="h-4 w-4 mr-2" />
-          Редактировать
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => setIsDeleteDialogOpen(true)}
-          className="text-destructive hover:bg-destructive/10 flex-1 text-xs"
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          Удалить
-        </Button>
-      </div>
+        <div className="flex gap-2 px-6 pb-6" onClick={(e) => e.stopPropagation()}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onEdit(group)}
+            className="flex-1 text-xs"
+          >
+            <Pencil className="h-4 w-4 mr-2" />
+            Редактировать
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setIsDeleteDialogOpen(true)}
+            className="text-destructive hover:bg-destructive/10 flex-1 text-xs"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Удалить
+          </Button>
+        </div>
+      </Card>
 
       <ConfirmDeleteDialog
         open={isDeleteDialogOpen}
