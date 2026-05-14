@@ -438,6 +438,23 @@ def seed_database(session: Session) -> None:
             )
         ).first()
         if not existing:
+            # Determine module_id based on lesson title and group
+            module_id = None
+            if "Variables" in title and group.program_id == program1.id:
+                module_id = module1.id
+            elif "Loops" in title and group.program_id == program1.id:
+                module_id = module2.id
+            elif "Functions" in title and group.program_id == program1.id:
+                module_id = module3.id
+            elif "HTML" in title and group.program_id == program2.id:
+                module_id = module4.id
+            elif ("CSS" in title or "Responsive" in title) and group.program_id == program2.id:
+                module_id = module5.id
+            elif "JavaScript" in title and group.program_id == program2.id:
+                module_id = module6.id
+            elif "Data" in title and group.program_id == program3.id:
+                module_id = module7.id
+
             lesson_in = LessonCreate(
                 title=title,
                 description=description,
@@ -445,6 +462,7 @@ def seed_database(session: Session) -> None:
                 scheduled_at=scheduled_at,
                 duration_minutes=90,
                 location=location,
+                module_id=module_id,
             )
             crud_lesson.create_lesson(session=session, lesson_create=lesson_in)
             logger.info(f"✓ Created lesson: {title}")

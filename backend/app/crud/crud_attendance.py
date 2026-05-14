@@ -1,6 +1,7 @@
 from uuid import UUID
 from sqlmodel import Session, select
-from app.models import Attendance, AttendanceCreate, AttendanceUpdate, AttendanceStatus, Lesson
+from app.models import Attendance, AttendanceCreate, AttendanceUpdate, AttendanceStatus, Lesson, Progress, ProgressCreate
+from app.models.enums import ProgressStatus
 
 
 def create_attendance(
@@ -70,6 +71,10 @@ def update_attendance(
     session.add(db_attendance)
     session.commit()
     session.refresh(db_attendance)
+
+    # Update progress if lesson has module
+    _update_progress_from_attendance(session, db_attendance)
+
     return db_attendance
 
 
@@ -79,6 +84,37 @@ def delete_attendance(
     db_attendance: Attendance,
 ) -> None:
     session.delete(db_attendance)
+    session.commit()
+
+
+def _update_progress_from_attendance(session: Session, attendance: Attendance) -> None:
+    """Update student progress based on attendance status and lesson module."""
+    lesson = session.get(Lesson, attendance.lesson_id)
+    if not lesson or not lesson.module_id:
+        return
+
+    # Check if progress exists, if not create it
+    progress = session.exec(
+        select(Progress).where(
+            Progress.student_id == attendance.student_id,
+            Progress.module_id == lesson.module_id,
+        )
+    ).first()
+
+    if not progress:
+        progress = Progress(
+            student_id=attendance.student_id,
+            module_id=lesson.module_id,
+            status=ProgressStatus.NOT_STARTED,
+        )
+        session.add(progress)
+
+    # Update status based on attendance
+    if attendance.status == "present":
+        if progress.status == ProgressStatus.NOT_STARTED:
+            progress.status = ProgressStatus.IN_PROGRESS
+    # For now, mark as IN_PROGRESS if attended, COMPLETED if all lessons attended (can be enhanced)
+
     session.commit()
 
 
@@ -100,6 +136,7 @@ def create_or_update_attendance(
         session.add(existing)
         session.commit()
         session.refresh(existing)
+        _update_progress_from_attendance(session, existing)
         return existing
 
     attendance_create = AttendanceCreate(
@@ -107,4 +144,6 @@ def create_or_update_attendance(
         student_id=student_id,
         status=status,
     )
-    return create_attendance(session=session, attendance_create=attendance_create)
+    new_attendance = create_attendance(session=session, attendance_create=attendance_create)
+    _update_progress_from_attendance(session, new_attendance)
+    return new_attendance
