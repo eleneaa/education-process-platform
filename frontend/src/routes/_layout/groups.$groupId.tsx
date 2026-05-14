@@ -3,7 +3,7 @@ import { createFileRoute, useParams, Link, useNavigate } from "@tanstack/react-r
 import { ArrowLeft, BookOpen, Users, Pencil, Trash2, X, Check, Plus } from "lucide-react"
 import { useState, useMemo } from "react"
 
-import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, createAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup, createEnrollment, deleteEnrollment, createLesson } from "@/client/custom-api"
+import { getGroups, getLessons, getEnrollments, getAttendance, updateAttendance, createAttendance, getPrograms, getUsers, getModules, getProgresses, updateGroup, deleteGroup, createEnrollment, deleteEnrollment } from "@/client/custom-api"
 import type { Attendance, AttendanceStatus, Lesson, Group } from "@/client/custom-types"
 import type { UserPublic } from "@/client/types.gen"
 import { Button } from "@/components/ui/button"
@@ -31,7 +31,6 @@ function GroupDetailPage() {
   const [editMode, setEditMode] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [addStudentOpen, setAddStudentOpen] = useState(false)
-  const [addLessonOpen, setAddLessonOpen] = useState(false)
 
   // Edit form state
   const [editName, setEditName] = useState("")
@@ -39,13 +38,6 @@ function GroupDetailPage() {
   const [editTeacherId, setEditTeacherId] = useState("")
   const [editStartDate, setEditStartDate] = useState("")
   const [editEndDate, setEditEndDate] = useState("")
-
-  // Lesson form state
-  const [lessonTitle, setLessonTitle] = useState("")
-  const [lessonModuleId, setLessonModuleId] = useState("")
-  const [lessonDate, setLessonDate] = useState("")
-  const [lessonTime, setLessonTime] = useState("10:00")
-  const [lessonDuration, setLessonDuration] = useState("90")
 
   const { data: groupsData } = useQuery({
     queryKey: ["groups"],
@@ -147,22 +139,6 @@ function GroupDetailPage() {
       showSuccessToast("Студент удален")
     },
     onError: () => showErrorToast("Ошибка при удалении студента"),
-  })
-
-  const createLessonMutation = useMutation({
-    mutationFn: createLesson,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lessons"] })
-      queryClient.invalidateQueries({ queryKey: ["attendance", groupId] })
-      showSuccessToast("Урок создан")
-      setAddLessonOpen(false)
-      setLessonTitle("")
-      setLessonModuleId("")
-      setLessonDate("")
-      setLessonTime("10:00")
-      setLessonDuration("90")
-    },
-    onError: () => showErrorToast("Ошибка при создании урока"),
   })
 
   const group = useMemo(
@@ -418,8 +394,9 @@ function GroupDetailPage() {
         <Card>
           <CardContent className="p-8">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3 mb-8">
+              <TabsList className="grid w-full grid-cols-4 mb-8">
                 <TabsTrigger value="students">Студенты</TabsTrigger>
+                <TabsTrigger value="lessons">Уроки</TabsTrigger>
                 <TabsTrigger value="attendance">Посещаемость</TabsTrigger>
                 <TabsTrigger value="progress">Прогресс</TabsTrigger>
               </TabsList>
@@ -500,118 +477,13 @@ function GroupDetailPage() {
                 </div>
               </TabsContent>
 
+              {/* Tab: Lessons */}
+              <TabsContent value="lessons">
+                TODO: Вкладка уроков
+              </TabsContent>
+
               {/* Tab: Attendance */}
               <TabsContent value="attendance">
-                <div className="mb-6">
-                  <Button onClick={() => setAddLessonOpen(!addLessonOpen)} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Добавить урок
-                  </Button>
-
-                  {addLessonOpen && (
-                    <Card className="mt-4 p-4">
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-sm font-medium">Название урока</Label>
-                          <Input
-                            value={lessonTitle}
-                            onChange={(e) => setLessonTitle(e.target.value)}
-                            placeholder="е.г., Python - Переменные"
-                            className="mt-1"
-                          />
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Модуль</Label>
-                          <Select value={lessonModuleId} onValueChange={setLessonModuleId}>
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Выберите модуль" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {modules.map((m) => (
-                                <SelectItem key={m.id} value={m.id}>
-                                  {m.title}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4">
-                          <div>
-                            <Label className="text-sm font-medium">Дата</Label>
-                            <Input
-                              type="date"
-                              value={lessonDate}
-                              onChange={(e) => setLessonDate(e.target.value)}
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">Время</Label>
-                            <Input
-                              type="time"
-                              value={lessonTime}
-                              onChange={(e) => setLessonTime(e.target.value)}
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">Длительность (мин)</Label>
-                            <Input
-                              type="number"
-                              value={lessonDuration}
-                              onChange={(e) => setLessonDuration(e.target.value)}
-                              className="mt-1"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex gap-3 pt-2 border-t border-border">
-                          <Button
-                            onClick={() => {
-                              if (!lessonTitle.trim() || !lessonModuleId || !lessonDate) {
-                                showErrorToast("Заполните все поля")
-                                return
-                              }
-                              const [year, month, day] = lessonDate.split("-")
-                              const [hours, minutes] = lessonTime.split(":")
-                              const scheduledAt = new Date(
-                                parseInt(year),
-                                parseInt(month) - 1,
-                                parseInt(day),
-                                parseInt(hours),
-                                parseInt(minutes)
-                              ).toISOString()
-                              createLessonMutation.mutate({
-                                title: lessonTitle.trim(),
-                                group_id: groupId,
-                                module_id: lessonModuleId,
-                                scheduled_at: scheduledAt,
-                                duration_minutes: parseInt(lessonDuration),
-                              })
-                            }}
-                            disabled={createLessonMutation.isPending}
-                            className="flex-1 gap-2"
-                          >
-                            <Check className="h-4 w-4" />
-                            Создать
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => setAddLessonOpen(false)}
-                            disabled={createLessonMutation.isPending}
-                            className="flex-1 gap-2"
-                          >
-                            <X className="h-4 w-4" />
-                            Отмена
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  )}
-                </div>
-
                 {groupLessons.length === 0 || students.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">Нет данных для отображения</div>
                 ) : (
