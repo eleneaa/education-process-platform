@@ -1,17 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { FileDown, Plus, Search, Upload, MoreVertical } from "lucide-react"
+import { FileDown, Plus, Search, Upload, MoreVertical, Copy, Check } from "lucide-react"
 import { useState, useMemo } from "react"
 
 import {
   createAdmissionRequest,
   getAdmissionRequests,
   updateAdmissionRequest,
-  approveAdmissionRequest,
-  getGroups,
   importAdmissionRequestsCSV,
 } from "@/client/custom-api"
-import type { AdmissionRequest, Group } from "@/client/custom-types"
+import type { AdmissionRequest } from "@/client/custom-types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -81,7 +79,76 @@ const ADMISSION_EXPORT_COLUMNS: ExportColumn[] = [
   },
 ]
 
-// ─── Create Request Dialog ────────────────────────────────────────────────────
+// ─── Create User Dialog ─────────────────────────────────────────────────────
+
+function CreateUserDialog({
+  open,
+  onOpenChange,
+  email,
+  password,
+  fullName,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  email?: string
+  password?: string
+  fullName?: string
+}) {
+  const [copied, setCopied] = useState(false)
+
+  const scriptMessage = `Для входа в систему используйте:
+Email: ${email || "—"}
+Пароль: ${password || "—"}
+
+Пожалуйста, измените пароль при первом входе.`
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(scriptMessage)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Аккаунт создан — {fullName}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">Email</Label>
+            <div className="mt-1 p-3 bg-surface-1 rounded border border-hair text-sm mono">
+              {email}
+            </div>
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Временный пароль</Label>
+            <div className="mt-1 p-3 bg-surface-1 rounded border border-hair text-sm mono">
+              {password}
+            </div>
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Сообщение студенту</Label>
+            <div className="mt-1 p-3 bg-surface-1 rounded border border-hair text-sm whitespace-pre-wrap">
+              {scriptMessage}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Закрыть
+          </Button>
+          <Button onClick={handleCopy} className="gap-2">
+            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {copied ? "Скопировано" : "Скопировать"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── Create Request Dialog ──────────────────────────────────────────────────
 
 function CreateRequestDialog({
   open,
@@ -214,7 +281,7 @@ function CreateRequestDialog({
   )
 }
 
-// ─── Kanban Column ────────────────────────────────────────────────────────────
+// ─── Kanban Column ─────────────────────────────────────────────────────────
 
 interface KanbanColumnProps {
   status: string
@@ -222,11 +289,21 @@ interface KanbanColumnProps {
   index: number
   requests: AdmissionRequest[]
   onStatusChange: (requestId: string, newStatus: string) => void
-  groups: Group[]
-  onApprove: (requestId: string, groupId: string) => void
+  onAssignedToChange: (requestId: string, adminId: string | null) => void
+  onCreateUser: (requestId: string) => void
+  admins: Array<{ id: string; email: string; full_name: string | null }>
 }
 
-function KanbanColumn({ status, title, index, requests, onStatusChange, groups, onApprove }: KanbanColumnProps) {
+function KanbanColumn({
+  status,
+  title,
+  index,
+  requests,
+  onStatusChange,
+  onAssignedToChange,
+  onCreateUser,
+  admins,
+}: KanbanColumnProps) {
   return (
     <div className="flex flex-col flex-1 min-w-80">
       {/* Column Header */}
@@ -239,7 +316,82 @@ function KanbanColumn({ status, title, index, requests, onStatusChange, groups, 
       {/* Cards */}
       <div className="flex flex-col gap-3 flex-1">
         {requests.map((req) => (
-          <AdmissionCard key={req.id} request={req} onStatusChange={onStatusChange} groups={groups} onApprove={onApprove} />
+          <Card key={req.id} className="border-hair rounded-2xl p-4 flex flex-col gap-3 hover:shadow-sm transition-shadow">
+            {/* Header: ID + Date */}
+            <div className="flex items-start justify-between gap-2">
+              <span className="mono text-xs text-mute">#{req.id.slice(0, 8)}</span>
+              <span className="mono text-xs text-mute">
+                {req.created_at
+                  ? new Date(req.created_at).toLocaleDateString("ru-RU", {
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "—"}
+              </span>
+            </div>
+
+            {/* Name */}
+            <div>
+              <p className="body-sm text-fg font-medium">{req.full_name}</p>
+            </div>
+
+            {/* Program Interest */}
+            {req.program_interest && <p className="body-xs text-mute line-clamp-1">{req.program_interest}</p>}
+
+            {/* Admin assignment (in_review status) */}
+            {status === "in_review" && (
+              <div className="pt-2">
+                <Label className="text-xs font-medium">Ответственный</Label>
+                <Select
+                  value={req.assigned_to_id || ""}
+                  onValueChange={(value) => onAssignedToChange(req.id, value || null)}
+                >
+                  <SelectTrigger className="mt-1 h-8">
+                    <SelectValue placeholder="Выберите..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Не назначен</SelectItem>
+                    {admins.map((admin) => (
+                      <SelectItem key={admin.id} value={admin.id}>
+                        {admin.full_name || admin.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Create user button (approved status) */}
+            {status === "approved" && (
+              <div className="pt-2">
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => onCreateUser(req.id)}
+                >
+                  Создать аккаунт
+                </Button>
+              </div>
+            )}
+
+            {/* Footer: Source + Status change */}
+            <div className="flex items-center justify-between pt-2 border-t border-hair">
+              <span className="label-sm text-mute">{SOURCE_LABELS[req.source] || req.source}</span>
+              {status !== "approved" && (
+                <Select value={status} onValueChange={(newStatus) => onStatusChange(req.id, newStatus)}>
+                  <SelectTrigger className="w-fit h-8 border-0 bg-transparent p-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">Новые</SelectItem>
+                    <SelectItem value="in_review">На проверке</SelectItem>
+                    <SelectItem value="approved">Одобрена</SelectItem>
+                    <SelectItem value="rejected">Отклонена</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </Card>
         ))}
         {requests.length === 0 && <div className="text-center py-8 text-mute text-sm">Нет заявок</div>}
       </div>
@@ -247,127 +399,7 @@ function KanbanColumn({ status, title, index, requests, onStatusChange, groups, 
   )
 }
 
-// ─── Admission Card ───────────────────────────────────────────────────────────
-
-interface AdmissionCardProps {
-  request: AdmissionRequest
-  onStatusChange: (requestId: string, newStatus: string) => void
-  groups: Group[]
-  onApprove: (requestId: string, groupId: string) => void
-}
-
-function AdmissionCard({ request, onStatusChange, groups, onApprove }: AdmissionCardProps) {
-  const [open, setOpen] = useState(false)
-  const [newStatus, setNewStatus] = useState(request.status)
-  const [selectedGroupId, setSelectedGroupId] = useState("")
-
-  const handleStatusChange = () => {
-    if (newStatus === "approved" && newStatus !== request.status) {
-      if (!selectedGroupId) return
-      onApprove(request.id, selectedGroupId)
-      setSelectedGroupId("")
-    } else if (newStatus !== request.status) {
-      onStatusChange(request.id, newStatus)
-    }
-    setOpen(false)
-  }
-
-  const handleOpenChange = (isOpen: boolean) => {
-    setOpen(isOpen)
-    if (!isOpen) {
-      setSelectedGroupId("")
-      setNewStatus(request.status)
-    }
-  }
-
-  const createdDate = request.created_at
-    ? new Date(request.created_at).toLocaleDateString("ru-RU", {
-        month: "short",
-        day: "numeric",
-      })
-    : "—"
-
-  return (
-    <Card className="border-hair rounded-2xl p-4 flex flex-col gap-3 hover:shadow-sm transition-shadow">
-      {/* Header: ID + Date */}
-      <div className="flex items-start justify-between gap-2">
-        <span className="mono text-xs text-mute">#{request.id.slice(0, 8)}</span>
-        <span className="mono text-xs text-mute">{createdDate}</span>
-      </div>
-
-      {/* Name */}
-      <div>
-        <p className="body-sm text-fg font-medium truncate">{request.full_name}</p>
-      </div>
-
-      {/* Program Interest */}
-      {request.program_interest && <p className="body-xs text-mute line-clamp-1">{request.program_interest}</p>}
-
-      {/* Footer: Source */}
-      <div className="flex items-center justify-between pt-2 border-t border-hair">
-        <span className="label-sm text-mute">{SOURCE_LABELS[request.source] || request.source}</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setOpen(true)}
-          className="h-6 w-6 p-0"
-        >
-          <MoreVertical className="w-4 h-4 text-mute" />
-        </Button>
-      </div>
-
-      {/* Status Change Dialog */}
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Изменить статус</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-mute">{request.full_name}</p>
-            <Select value={newStatus} onValueChange={setNewStatus}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="new">Новые</SelectItem>
-                <SelectItem value="in_review">На проверке</SelectItem>
-                <SelectItem value="approved">Одобрена</SelectItem>
-                <SelectItem value="rejected">Отклонена</SelectItem>
-              </SelectContent>
-            </Select>
-            {newStatus === "approved" && (
-              <>
-                <Label htmlFor="group" className="text-sm font-medium">Выберите группу *</Label>
-                <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-                  <SelectTrigger id="group">
-                    <SelectValue placeholder="Выберите группу..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {groups.map((g) => (
-                      <SelectItem key={g.id} value={g.id}>
-                        {g.name} ({g.program_title})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => handleOpenChange(false)}>
-              Отмена
-            </Button>
-            <Button onClick={handleStatusChange} disabled={newStatus === "approved" && !selectedGroupId}>
-              Применить
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
-  )
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page ─────────────────────────────────────────────────────────────
 
 function AdmissionRequestsPage() {
   const { showSuccessToast, showErrorToast } = useCustomToast()
@@ -375,19 +407,32 @@ function AdmissionRequestsPage() {
   const [search, setSearch] = useState("")
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false)
+  const [createdUserData, setCreatedUserData] = useState<{
+    email?: string
+    password?: string
+    fullName?: string
+  }>({})
 
   const { data: requestsResponse } = useQuery({
     queryKey: ["admission-requests"],
     queryFn: getAdmissionRequests,
   })
 
-  const { data: groupsResponse } = useQuery({
-    queryKey: ["groups"],
-    queryFn: getGroups,
+  const { data: adminsResponse } = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/users/", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+      })
+      return response.json()
+    },
   })
 
   const requests = requestsResponse?.data ?? []
-  const groups = groupsResponse?.data ?? []
+  const admins = (adminsResponse?.data ?? []).filter((u: any) => u.role === "ADMIN" || u.role === "TEACHER")
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
@@ -399,15 +444,35 @@ function AdmissionRequestsPage() {
     onError: () => showErrorToast("Ошибка при изменении статуса"),
   })
 
-  const approveMutation = useMutation({
-    mutationFn: ({ id, groupId }: { id: string; groupId: string }) =>
-      approveAdmissionRequest(id, groupId),
+  const updateAssignedToMutation = useMutation({
+    mutationFn: ({ id, assignedToId }: { id: string; assignedToId: string | null }) =>
+      updateAdmissionRequest(id, { assigned_to_id: assignedToId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admission-requests"] })
-      queryClient.invalidateQueries({ queryKey: ["groups"] })
-      showSuccessToast("Заявка одобрена и студент добавлен в группу")
+      showSuccessToast("Ответственный назначен")
     },
-    onError: () => showErrorToast("Ошибка при одобрении заявки"),
+    onError: () => showErrorToast("Ошибка при назначении ответственного"),
+  })
+
+  const createUserMutation = useMutation({
+    mutationFn: (id: string) =>
+      fetch(`/api/v1/admission-requests/${id}/create-user`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+      }).then((r) => r.json()),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["admission-requests"] })
+      setCreatedUserData({
+        email: data.email,
+        password: data.password,
+        fullName: data.full_name,
+      })
+      setCreateUserDialogOpen(true)
+      showSuccessToast("Аккаунт создан")
+    },
+    onError: () => showErrorToast("Ошибка при создании аккаунта"),
   })
 
   // Filter by search
@@ -437,8 +502,12 @@ function AdmissionRequestsPage() {
     updateStatusMutation.mutate({ id: requestId, status: newStatus })
   }
 
-  const handleApprove = (requestId: string, groupId: string) => {
-    approveMutation.mutate({ id: requestId, groupId })
+  const handleAssignedToChange = (requestId: string, adminId: string | null) => {
+    updateAssignedToMutation.mutate({ id: requestId, assignedToId: adminId })
+  }
+
+  const handleCreateUser = (requestId: string) => {
+    createUserMutation.mutate(requestId)
   }
 
   return (
@@ -516,8 +585,9 @@ function AdmissionRequestsPage() {
             index={0}
             requests={requestsByStatus.new}
             onStatusChange={handleStatusChange}
-            groups={groups}
-            onApprove={handleApprove}
+            onAssignedToChange={handleAssignedToChange}
+            onCreateUser={handleCreateUser}
+            admins={admins}
           />
           <KanbanColumn
             status="in_review"
@@ -525,8 +595,9 @@ function AdmissionRequestsPage() {
             index={1}
             requests={requestsByStatus.in_review}
             onStatusChange={handleStatusChange}
-            groups={groups}
-            onApprove={handleApprove}
+            onAssignedToChange={handleAssignedToChange}
+            onCreateUser={handleCreateUser}
+            admins={admins}
           />
           <KanbanColumn
             status="approved"
@@ -534,8 +605,9 @@ function AdmissionRequestsPage() {
             index={2}
             requests={requestsByStatus.approved}
             onStatusChange={handleStatusChange}
-            groups={groups}
-            onApprove={handleApprove}
+            onAssignedToChange={handleAssignedToChange}
+            onCreateUser={handleCreateUser}
+            admins={admins}
           />
           <KanbanColumn
             status="rejected"
@@ -543,14 +615,23 @@ function AdmissionRequestsPage() {
             index={3}
             requests={requestsByStatus.rejected}
             onStatusChange={handleStatusChange}
-            groups={groups}
-            onApprove={handleApprove}
+            onAssignedToChange={handleAssignedToChange}
+            onCreateUser={handleCreateUser}
+            admins={admins}
           />
         </div>
       </div>
 
       {/* Dialogs */}
       <CreateRequestDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+
+      <CreateUserDialog
+        open={createUserDialogOpen}
+        onOpenChange={setCreateUserDialogOpen}
+        email={createdUserData.email}
+        password={createdUserData.password}
+        fullName={createdUserData.fullName}
+      />
 
       <ExportPDFDialog
         open={exportOpen}

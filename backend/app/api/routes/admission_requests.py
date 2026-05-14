@@ -248,6 +248,100 @@ async def approve_admission_request(
     return _enrich(session, admission_request)
 
 
+class UserCreatedResponse(SQLModel):
+    id: UUID
+    email: str | None
+    full_name: str | None
+    password: str
+
+
+@router.post("/{admission_request_id}/create-user", response_model=UserCreatedResponse)
+def create_user_from_admission(
+    admission_request_id: UUID,
+    *,
+    session: SessionDep,
+    current_user: CurrentTeacherOrAdmin,
+) -> Any:
+    """
+    Create a user account from an admission request (without enrolling in group).
+    Updates admission request status to 'approved'.
+
+    Returns user info including temporary password for sending to student.
+    Only admin/teacher can create.
+    """
+    from app.models.enums import UserRole
+    from app.crud.crud_user import create_user
+    from app.models import UserCreate
+
+    if current_user.role == UserRole.STUDENT:
+        raise HTTPException(
+            status_code=403,
+            detail="Students cannot create users from admission requests",
+        )
+
+    admission_request = crud_admission_request.get_admission_request_by_id(
+        session=session,
+        admission_request_id=admission_request_id,
+    )
+
+    if not admission_request:
+        raise HTTPException(
+            status_code=404,
+            detail="Admission request not found",
+        )
+
+    if admission_request.status == "approved":
+        raise HTTPException(
+            status_code=400,
+            detail="User already created for this admission request",
+        )
+
+    # Check if user already exists
+    existing_user = session.exec(
+        select(User).where(User.email == admission_request.email)
+    ).first()
+
+    if existing_user:
+        # User exists, just update admission request status
+        admission_request.status = "approved"
+        session.add(admission_request)
+        session.commit()
+        session.refresh(admission_request)
+        return UserCreatedResponse(
+            id=existing_user.id,
+            email=existing_user.email,
+            full_name=existing_user.full_name,
+            password="(user already exists)",
+        )
+
+    # Create new user with temporary password
+    import random
+    import string
+    temp_pass_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    temporary_password = f"TempPass_{temp_pass_suffix}"
+    user_create = UserCreate(
+        email=admission_request.email,
+        full_name=admission_request.full_name,
+        password=temporary_password,
+        role=UserRole.STUDENT,
+        is_active=True,
+    )
+    user = create_user(session=session, user_create=user_create)
+
+    # Update admission request status
+    admission_request.status = "approved"
+    session.add(admission_request)
+    session.commit()
+    session.refresh(admission_request)
+
+    return UserCreatedResponse(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        password=temporary_password,
+    )
+
+
 @router.post("/public/create", response_model=AdmissionRequest)
 @rate_limiter.limit(max_requests=5, window_seconds=3600)
 def create_admission_request_public(
