@@ -505,7 +505,7 @@ function GroupDetailPage() {
                               const att = attendance.find(
                                 (a) => a.lesson_id === lesson.id && a.student_id === student?.id,
                               )
-                              const status = att?.status ?? ("present" as AttendanceStatus)
+                              const status = att?.status ?? ("absent" as AttendanceStatus)
                               const icon = status === "present" ? "✅" : status === "absent" ? "❌" : "⏰"
                               return (
                                 <td key={lesson.id} className="text-center py-3 px-2">
