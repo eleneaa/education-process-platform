@@ -51,7 +51,7 @@ import {
 import { MetricCard } from "@/components/Dashboard"
 import useAuth from "@/hooks/useAuth"
 
-export const Route = createFileRoute("/_layout/")({
+export const Route = createFileRoute("/_layout/index/old")({
   component: Dashboard,
   head: () => ({
     meta: [{ title: "Дашборд" }],

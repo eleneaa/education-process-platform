@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { ChevronLeft, ChevronRight, Clock, MapPin, X, BookOpen, Users } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, MapPin, X, BookOpen, Users, MapIcon } from "lucide-react"
 import { useState, useMemo } from "react"
 import { getLessons, getGroups, getPrograms, getUsers } from "@/client/custom-api"
 import { Button } from "@/components/ui/button"
@@ -355,6 +355,12 @@ export function TeacherSchedule() {
                           <Users className="w-4 h-4" />
                           <span>{group?.name}</span>
                         </div>
+                        {lesson.location && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            <span>{lesson.location}</span>
+                          </div>
+                        )}
                         {lesson.description && (
                           <div>
                             <p className="text-mute">{lesson.description}</p>

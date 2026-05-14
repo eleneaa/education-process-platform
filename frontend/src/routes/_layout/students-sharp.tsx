@@ -12,7 +12,7 @@ import { ImportDialog } from "@/components/Common/ImportDialog"
 import { importUsersCSV } from "@/client/custom-api"
 import { useQueryClient } from "@tanstack/react-query"
 
-export const Route = createFileRoute("/_layout/students")({
+export const Route = createFileRoute("/_layout/students-sharp")({
   component: StudentsScreen,
   head: () => ({
     meta: [{ title: "Студенты" }],

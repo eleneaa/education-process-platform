@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useMemo } from "react"
-import { Clock, BookOpen, Users } from "lucide-react"
+import { Clock, BookOpen, Users, MapPin } from "lucide-react"
 import { getLessons, getGroups, getPrograms } from "@/client/custom-api"
 import useAuth from "@/hooks/useAuth"
 import { Link } from "@tanstack/react-router"
@@ -142,6 +142,12 @@ export function TeacherTodayLessons() {
                     <Users className="w-4 h-4 text-mute" />
                     <span className="text-mute">{group?.name}</span>
                   </div>
+                  {lesson.location && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-mute" />
+                      <span className="text-mute">{lesson.location}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
