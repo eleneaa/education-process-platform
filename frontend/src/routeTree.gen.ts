@@ -31,6 +31,7 @@ import { Route as LayoutProgramsIndexRouteImport } from './routes/_layout/progra
 import { Route as LayoutProgramsOldRouteImport } from './routes/_layout/programs.old'
 import { Route as LayoutProgramsProgramIdRouteImport } from './routes/_layout/programs.$programId'
 import { Route as LayoutGroupsOldRouteImport } from './routes/_layout/groups.old'
+import { Route as LayoutGroupsGroupIdRouteImport } from './routes/_layout/groups.$groupId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -141,6 +142,11 @@ const LayoutGroupsOldRoute = LayoutGroupsOldRouteImport.update({
   path: '/old',
   getParentRoute: () => LayoutGroupsRoute,
 } as any)
+const LayoutGroupsGroupIdRoute = LayoutGroupsGroupIdRouteImport.update({
+  id: '/$groupId',
+  path: '/$groupId',
+  getParentRoute: () => LayoutGroupsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/students-sharp': typeof LayoutStudentsSharpRoute
   '/trajectory': typeof LayoutTrajectoryRoute
   '/users': typeof LayoutUsersRoute
+  '/groups/$groupId': typeof LayoutGroupsGroupIdRoute
   '/groups/old': typeof LayoutGroupsOldRoute
   '/programs/$programId': typeof LayoutProgramsProgramIdRoute
   '/programs/old': typeof LayoutProgramsOldRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/trajectory': typeof LayoutTrajectoryRoute
   '/users': typeof LayoutUsersRoute
   '/': typeof LayoutIndexRoute
+  '/groups/$groupId': typeof LayoutGroupsGroupIdRoute
   '/groups/old': typeof LayoutGroupsOldRoute
   '/programs/$programId': typeof LayoutProgramsProgramIdRoute
   '/programs/old': typeof LayoutProgramsOldRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/_layout/trajectory': typeof LayoutTrajectoryRoute
   '/_layout/users': typeof LayoutUsersRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/groups/$groupId': typeof LayoutGroupsGroupIdRoute
   '/_layout/groups/old': typeof LayoutGroupsOldRoute
   '/_layout/programs/$programId': typeof LayoutProgramsProgramIdRoute
   '/_layout/programs/old': typeof LayoutProgramsOldRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/students-sharp'
     | '/trajectory'
     | '/users'
+    | '/groups/$groupId'
     | '/groups/old'
     | '/programs/$programId'
     | '/programs/old'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/trajectory'
     | '/users'
     | '/'
+    | '/groups/$groupId'
     | '/groups/old'
     | '/programs/$programId'
     | '/programs/old'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/_layout/trajectory'
     | '/_layout/users'
     | '/_layout/'
+    | '/_layout/groups/$groupId'
     | '/_layout/groups/old'
     | '/_layout/programs/$programId'
     | '/_layout/programs/old'
@@ -448,14 +460,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutGroupsOldRouteImport
       parentRoute: typeof LayoutGroupsRoute
     }
+    '/_layout/groups/$groupId': {
+      id: '/_layout/groups/$groupId'
+      path: '/$groupId'
+      fullPath: '/groups/$groupId'
+      preLoaderRoute: typeof LayoutGroupsGroupIdRouteImport
+      parentRoute: typeof LayoutGroupsRoute
+    }
   }
 }
 
 interface LayoutGroupsRouteChildren {
+  LayoutGroupsGroupIdRoute: typeof LayoutGroupsGroupIdRoute
   LayoutGroupsOldRoute: typeof LayoutGroupsOldRoute
 }
 
 const LayoutGroupsRouteChildren: LayoutGroupsRouteChildren = {
+  LayoutGroupsGroupIdRoute: LayoutGroupsGroupIdRoute,
   LayoutGroupsOldRoute: LayoutGroupsOldRoute,
 }
 
