@@ -353,6 +353,7 @@ export async function createLesson(body: {
   duration_minutes?: number
   location?: string | null
   group_id: string
+  module_id?: string | null
 }): Promise<Lesson> {
   const { data } = await api.post<Lesson>("/lessons/", body)
   return data
