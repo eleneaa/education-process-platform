@@ -14,7 +14,7 @@ import {
   MessageSquare,
   Upload,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 
 import {
   createGroup,
@@ -54,6 +54,22 @@ export const Route = createFileRoute("/_layout/groups")({
     meta: [{ title: "Группы" }],
   }),
 })
+
+// ─── Color Palette ────────────────────────────────────────────────────────────
+
+const groupColors = [
+  { bg: "bg-blue-500/20", border: "border-blue-600", text: "text-blue-700", dot: "bg-blue-600" },
+  { bg: "bg-purple-500/20", border: "border-purple-600", text: "text-purple-700", dot: "bg-purple-600" },
+  { bg: "bg-cyan-500/20", border: "border-cyan-600", text: "text-cyan-700", dot: "bg-cyan-600" },
+  { bg: "bg-emerald-500/20", border: "border-emerald-600", text: "text-emerald-700", dot: "bg-emerald-600" },
+  { bg: "bg-amber-500/20", border: "border-amber-600", text: "text-amber-700", dot: "bg-amber-600" },
+  { bg: "bg-pink-500/20", border: "border-pink-600", text: "text-pink-700", dot: "bg-pink-600" },
+]
+
+const getGroupColor = (groupId: string) => {
+  const index = groupId.charCodeAt(0) % groupColors.length
+  return groupColors[index]
+}
 
 // ─── Group Form ──────────────────────────────────────────────────────────────
 
@@ -324,9 +340,11 @@ function GroupCard({
     archived: "Архивирована",
   }
 
+  const color = getGroupColor(group.id)
+
   return (
     <>
-      <Card className="group overflow-hidden rounded-2xl backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+      <Card className={`group overflow-hidden rounded-2xl backdrop-blur-xl border-l-4 ${color.border} border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}>
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex-1 min-w-0">
