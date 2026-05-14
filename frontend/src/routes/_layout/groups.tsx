@@ -92,7 +92,7 @@ function GroupForm({
   const [name, setName] = useState(group?.name ?? "")
   const [programId, setProgramId] = useState(group?.program_id ?? "")
   const [teacherId, setTeacherId] = useState(group?.teacher_id ?? "")
-  const [status, setStatus] = useState(group?.status ?? "active")
+  const [status, setStatus] = useState(group?.status ?? "planned")
   const [startDate, setStartDate] = useState(group?.start_date ?? "")
   const [endDate, setEndDate] = useState(group?.end_date ?? "")
 
@@ -205,9 +205,10 @@ function GroupForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="planned">Запланирована</SelectItem>
             <SelectItem value="active">Активна</SelectItem>
-            <SelectItem value="completed">Завершена</SelectItem>
-            <SelectItem value="archived">Архивирована</SelectItem>
+            <SelectItem value="finished">Завершена</SelectItem>
+            <SelectItem value="canceled">Отменена</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -315,7 +316,6 @@ interface GroupCardProps {
   programTitle?: string
   onEdit: (group: Group) => void
   onDelete: (group: Group) => void
-  onManageStudents: (group: Group) => void
 }
 
 function GroupCard({
@@ -324,20 +324,21 @@ function GroupCard({
   programTitle,
   onEdit,
   onDelete,
-  onManageStudents,
 }: GroupCardProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const statusColor: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+    planned: "outline",
     active: "default",
-    completed: "secondary",
-    archived: "outline",
+    finished: "secondary",
+    canceled: "destructive",
   }
 
   const statusLabel = {
+    planned: "Запланирована",
     active: "Активна",
-    completed: "Завершена",
-    archived: "Архивирована",
+    finished: "Завершена",
+    canceled: "Отменена",
   }
 
   const color = getGroupColor(group.id)
@@ -352,10 +353,11 @@ function GroupCard({
 
   return (
     <>
-      <Card
-        className="group overflow-hidden rounded-2xl backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-        style={{ borderLeft: `4px solid ${borderColors[color.border]}` }}
-      >
+      <Link to="/groups/$groupId" params={{ groupId: group.id }}>
+        <Card
+          className="group overflow-hidden rounded-2xl backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+          style={{ borderLeft: `4px solid ${borderColors[color.border]}` }}
+        >
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex-1 min-w-0">
@@ -387,38 +389,30 @@ function GroupCard({
             </Badge>
           </div>
 
-          <div className="flex gap-2">
-            <Link to={`/groups/${group.id}`} className="flex-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="flex-1 text-xs"
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Студенты
-              </Button>
-            </Link>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onEdit(group)}
-              className="flex-1 text-xs"
-            >
-              <Pencil className="h-4 w-4 mr-2" />
-              Редактировать
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              className="text-destructive hover:bg-destructive/10 flex-1 text-xs"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Удалить
-            </Button>
-          </div>
         </CardContent>
-      </Card>
+        </Card>
+      </Link>
+
+      <div className="flex gap-2 mt-3">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => onEdit(group)}
+          className="flex-1 text-xs"
+        >
+          <Pencil className="h-4 w-4 mr-2" />
+          Редактировать
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setIsDeleteDialogOpen(true)}
+          className="text-destructive hover:bg-destructive/10 flex-1 text-xs"
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Удалить
+        </Button>
+      </div>
 
       <ConfirmDeleteDialog
         open={isDeleteDialogOpen}
@@ -675,7 +669,6 @@ function GroupsPage() {
               programTitle={getProgramTitle(group.program_id)}
               onEdit={handleEditGroup}
               onDelete={(g) => deleteGroupMutation.mutate(g.id)}
-              onManageStudents={handleManageStudents}
             />
           ))
         ) : (
