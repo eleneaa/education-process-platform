@@ -191,6 +191,11 @@ def _check_module_completion(session: Session, student_id: UUID, module_id: UUID
                 session.add(progress)
                 session.commit()
                 logger.info(f"✅ Module {module_id} marked as COMPLETED for student {student_id}")
+
+                # Award points for module completion
+                from app.crud.crud_gamification import add_points
+                logger.info(f"Awarding 10 points to student {student_id} for completing module")
+                add_points(session=session, user_id=student_id, points=10)
             else:
                 logger.info(f"Module already completed")
         else:
@@ -200,7 +205,10 @@ def _check_module_completion(session: Session, student_id: UUID, module_id: UUID
 def _award_points_for_attendance(session: Session, attendance: Attendance) -> None:
     """Award points when a student marks present."""
     from app.crud.crud_gamification import add_points
+    import logging
+    logger = logging.getLogger(__name__)
 
+    logger.info(f"Awarding 1 point to student {attendance.student_id} for attendance")
     add_points(session=session, user_id=attendance.student_id, points=1)
 
 
