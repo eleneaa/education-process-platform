@@ -75,9 +75,6 @@ function HeroSection() {
         Сегодня в системе — <em className="not-italic text-accent font-medium">{stats?.active_students || 0}</em>{" "}
         активных студентов.
       </h1>
-      <p className="body-md text-mute max-w-2xl italic">
-        Платформа работает стабильно. Все показатели в норме. Последнее обновление сейчас.
-      </p>
     </div>
   )
 }
