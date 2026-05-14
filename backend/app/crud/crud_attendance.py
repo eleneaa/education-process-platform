@@ -89,9 +89,18 @@ def delete_attendance(
 
 def _update_progress_from_attendance(session: Session, attendance: Attendance) -> None:
     """Update student progress based on attendance status and lesson module."""
+    import logging
+    logger = logging.getLogger(__name__)
+
     lesson = session.get(Lesson, attendance.lesson_id)
-    if not lesson or not lesson.module_id:
+    if not lesson:
+        logger.warning(f"Lesson {attendance.lesson_id} not found")
         return
+    if not lesson.module_id:
+        logger.warning(f"Lesson {lesson.title} has no module_id")
+        return
+
+    logger.info(f"Updating progress for student {attendance.student_id} on lesson {lesson.title} (module {lesson.module_id})")
 
     # Check if progress exists, if not create it
     progress = session.exec(
