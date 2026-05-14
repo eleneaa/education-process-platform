@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useParams } from "@tanstack/react-router"
-import { ArrowLeft, BookOpen, CalendarDays, ClipboardList, GraduationCap, Pencil, Plus, Trash2, Users } from "lucide-react"
+import { ArrowLeft, BookOpen, CalendarDays, ClipboardList, GraduationCap, Pencil, Plus, Trash2, Users, Upload } from "lucide-react"
 import { useState } from "react"
 
-import { createLesson, createModule, createProgress, createRecurringLessons, deleteLesson, deleteModule, getLessons, getEnrollments, getGroups, getModules, getProgresses, getPrograms, updateLesson, updateModule, updateProgress, updateProgram } from "@/client/custom-api"
+import { createLesson, createModule, createProgress, createRecurringLessons, deleteLesson, deleteModule, getLessons, getEnrollments, getGroups, getModules, getProgresses, getPrograms, updateLesson, updateModule, updateProgress, updateProgram, importModulesCSV } from "@/client/custom-api"
 import type { Lesson, Progress } from "@/client/custom-types"
 import type { Module, Program } from "@/client/custom-types"
 import { Badge } from "@/components/ui/badge"
@@ -33,6 +33,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { ImportDialog } from "@/components/Common/ImportDialog"
 import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 
@@ -813,9 +814,21 @@ function ProgramDetailPage() {
                 {STATUS_LABELS[program.status ?? ""] ?? program.status ?? "—"}
               </Badge>
               {canManage && (
-                <Button size="sm" variant="outline" onClick={() => setEditProgramOpen(true)}>
-                  <Pencil className="h-3.5 w-3.5 mr-1" />Редактировать
-                </Button>
+                <>
+                  <Button size="sm" variant="outline" onClick={() => setEditProgramOpen(true)}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" />Редактировать
+                  </Button>
+                  <ImportDialog
+                    trigger={<><Upload className="h-4 w-4" />Модули</>}
+                    title="Импорт модулей"
+                    description="CSV файл с модулями"
+                    templateColumns={["title", "description", "program_title", "module_type"]}
+                    templateColumnLabels={{ title: "Название", description: "Описание", program_title: "Программа", module_type: "Тип" }}
+                    templateFilename="modules_template.csv"
+                    onImport={importModulesCSV}
+                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ["modules", programId] })}
+                  />
+                </>
               )}
             </div>
           </div>

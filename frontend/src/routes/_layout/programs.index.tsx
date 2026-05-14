@@ -377,16 +377,6 @@ function ProgramsPage() {
                   onImport={importProgramsCSV}
                   onSuccess={() => queryClient.invalidateQueries({ queryKey: ["programs"] })}
                 />
-                <ImportDialog
-                  trigger={<><Upload className="w-4 h-4" />Модули</>}
-                  title="Импорт модулей"
-                  description="CSV файл с модулями"
-                  templateColumns={["title", "description", "program_title", "module_type"]}
-                  templateColumnLabels={{ title: "Название", description: "Описание", program_title: "Программа", module_type: "Тип" }}
-                  templateFilename="modules_template.csv"
-                  onImport={importModulesCSV}
-                  onSuccess={() => queryClient.invalidateQueries({ queryKey: ["modules"] })}
-                />
                 <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} className="gap-2">
                   <FileDown className="w-4 h-4" />
                   Экспорт
