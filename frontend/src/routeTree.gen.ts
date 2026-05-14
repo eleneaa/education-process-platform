@@ -28,6 +28,7 @@ import { Route as LayoutGamificationRouteImport } from './routes/_layout/gamific
 import { Route as LayoutAdmissionRequestsRouteImport } from './routes/_layout/admission-requests'
 import { Route as LayoutIndexOldRouteImport } from './routes/_layout/index.old'
 import { Route as LayoutProgramsIndexRouteImport } from './routes/_layout/programs.index'
+import { Route as LayoutGroupsIndexRouteImport } from './routes/_layout/groups.index'
 import { Route as LayoutProgramsOldRouteImport } from './routes/_layout/programs.old'
 import { Route as LayoutProgramsProgramIdRouteImport } from './routes/_layout/programs.$programId'
 import { Route as LayoutGroupsOldRouteImport } from './routes/_layout/groups.old'
@@ -127,6 +128,11 @@ const LayoutProgramsIndexRoute = LayoutProgramsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutProgramsRoute,
 } as any)
+const LayoutGroupsIndexRoute = LayoutGroupsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LayoutGroupsRoute,
+} as any)
 const LayoutProgramsOldRoute = LayoutProgramsOldRouteImport.update({
   id: '/old',
   path: '/old',
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/groups/old': typeof LayoutGroupsOldRoute
   '/programs/$programId': typeof LayoutProgramsProgramIdRoute
   '/programs/old': typeof LayoutProgramsOldRoute
+  '/groups/': typeof LayoutGroupsIndexRoute
   '/programs/': typeof LayoutProgramsIndexRoute
   '/index/old': typeof LayoutIndexOldRoute
 }
@@ -179,7 +186,6 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/admission-requests': typeof LayoutAdmissionRequestsRoute
   '/gamification': typeof LayoutGamificationRoute
-  '/groups': typeof LayoutGroupsRouteWithChildren
   '/items': typeof LayoutItemsRoute
   '/my-programs': typeof LayoutMyProgramsRoute
   '/schedule': typeof LayoutScheduleRoute
@@ -192,6 +198,7 @@ export interface FileRoutesByTo {
   '/groups/old': typeof LayoutGroupsOldRoute
   '/programs/$programId': typeof LayoutProgramsProgramIdRoute
   '/programs/old': typeof LayoutProgramsOldRoute
+  '/groups': typeof LayoutGroupsIndexRoute
   '/programs': typeof LayoutProgramsIndexRoute
   '/index/old': typeof LayoutIndexOldRoute
 }
@@ -218,6 +225,7 @@ export interface FileRoutesById {
   '/_layout/groups/old': typeof LayoutGroupsOldRoute
   '/_layout/programs/$programId': typeof LayoutProgramsProgramIdRoute
   '/_layout/programs/old': typeof LayoutProgramsOldRoute
+  '/_layout/groups/': typeof LayoutGroupsIndexRoute
   '/_layout/programs/': typeof LayoutProgramsIndexRoute
   '/_layout/index/old': typeof LayoutIndexOldRoute
 }
@@ -244,6 +252,7 @@ export interface FileRouteTypes {
     | '/groups/old'
     | '/programs/$programId'
     | '/programs/old'
+    | '/groups/'
     | '/programs/'
     | '/index/old'
   fileRoutesByTo: FileRoutesByTo
@@ -254,7 +263,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admission-requests'
     | '/gamification'
-    | '/groups'
     | '/items'
     | '/my-programs'
     | '/schedule'
@@ -267,6 +275,7 @@ export interface FileRouteTypes {
     | '/groups/old'
     | '/programs/$programId'
     | '/programs/old'
+    | '/groups'
     | '/programs'
     | '/index/old'
   id:
@@ -292,6 +301,7 @@ export interface FileRouteTypes {
     | '/_layout/groups/old'
     | '/_layout/programs/$programId'
     | '/_layout/programs/old'
+    | '/_layout/groups/'
     | '/_layout/programs/'
     | '/_layout/index/old'
   fileRoutesById: FileRoutesById
@@ -439,6 +449,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutProgramsIndexRouteImport
       parentRoute: typeof LayoutProgramsRoute
     }
+    '/_layout/groups/': {
+      id: '/_layout/groups/'
+      path: '/'
+      fullPath: '/groups/'
+      preLoaderRoute: typeof LayoutGroupsIndexRouteImport
+      parentRoute: typeof LayoutGroupsRoute
+    }
     '/_layout/programs/old': {
       id: '/_layout/programs/old'
       path: '/old'
@@ -473,11 +490,13 @@ declare module '@tanstack/react-router' {
 interface LayoutGroupsRouteChildren {
   LayoutGroupsGroupIdRoute: typeof LayoutGroupsGroupIdRoute
   LayoutGroupsOldRoute: typeof LayoutGroupsOldRoute
+  LayoutGroupsIndexRoute: typeof LayoutGroupsIndexRoute
 }
 
 const LayoutGroupsRouteChildren: LayoutGroupsRouteChildren = {
   LayoutGroupsGroupIdRoute: LayoutGroupsGroupIdRoute,
   LayoutGroupsOldRoute: LayoutGroupsOldRoute,
+  LayoutGroupsIndexRoute: LayoutGroupsIndexRoute,
 }
 
 const LayoutGroupsRouteWithChildren = LayoutGroupsRoute._addFileChildren(
