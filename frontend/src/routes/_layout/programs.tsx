@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Search, Upload, FileDown, Plus, Pencil, Layers } from "lucide-react"
+import { Search, Upload, FileDown, Plus, Pencil, Layers, Send, CheckCircle, XCircle } from "lucide-react"
 import { useState, useMemo } from "react"
 
-import { getPrograms, getModules, getGroups, updateProgram, createProgram, deleteProgram, importProgramsCSV, importModulesCSV } from "@/client/custom-api"
+import { getPrograms, getModules, getGroups, updateProgram, createProgram, deleteProgram, importProgramsCSV, importModulesCSV, submitProgramForReview } from "@/client/custom-api"
 import type { Program, Module } from "@/client/custom-types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { ImportDialog } from "@/components/Common/ImportDialog"
 import { ExportPDFDialog, type ExportColumn } from "@/components/Common/ExportPDFDialog"
 import useCustomToast from "@/hooks/useCustomToast"
+import useAuth from "@/hooks/useAuth"
 
 // Color palette for different programs (same as schedule)
 const programColors = [
@@ -81,9 +82,24 @@ interface ProgramCardProps {
   moduleCount: number
   groupCount: number
   onEdit: (program: Program) => void
+  isTeacher: boolean
+  onSubmitForReview?: (programId: string) => void
+  onApprove?: (programId: string) => void
+  onReject?: (programId: string) => void
+  isSubmitting?: boolean
 }
 
-function ProgramCard({ program, moduleCount, groupCount, onEdit }: ProgramCardProps) {
+function ProgramCard({
+  program,
+  moduleCount,
+  groupCount,
+  onEdit,
+  isTeacher,
+  onSubmitForReview,
+  onApprove,
+  onReject,
+  isSubmitting = false
+}: ProgramCardProps) {
   const status = program.status || "draft"
   const color = getProgramColor(program.id)
 
@@ -100,6 +116,19 @@ function ProgramCard({ program, moduleCount, groupCount, onEdit }: ProgramCardPr
             {STATUS_LABELS[status]}
           </Badge>
         </div>
+
+        {/* Teachers list */}
+        {program.teachers && program.teachers.length > 0 && (
+          <div className="mb-4 pb-4 border-b border-hair">
+            <div className="label-sm text-mute mb-2">ПРЕПОДАВАТЕЛИ</div>
+            <div className="text-sm text-fg space-y-1">
+              {program.teachers.map((teacher) => (
+                <div key={teacher.id}>{teacher.full_name}</div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4 py-4 border-t border-b border-hair mb-6">
           <div className="flex flex-col gap-1">
             <div className="label-sm text-mute">МОДУЛЕЙ</div>
@@ -110,16 +139,55 @@ function ProgramCard({ program, moduleCount, groupCount, onEdit }: ProgramCardPr
             <div className="mono text-xl font-light">{groupCount}</div>
           </div>
         </div>
-        <div className="flex gap-2 mt-auto">
+
+        <div className="flex gap-2 mt-auto flex-wrap">
           <Button
             size="sm"
             variant="outline"
             onClick={() => onEdit(program)}
-            className="flex-1 gap-1"
+            className="gap-1"
           >
             <Pencil className="h-4 w-4" />
             Редакт.
           </Button>
+
+          {isTeacher && status === "draft" && onSubmitForReview && (
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => onSubmitForReview(program.id)}
+              disabled={isSubmitting}
+              className="gap-1"
+            >
+              <Send className="h-4 w-4" />
+              На согласование
+            </Button>
+          )}
+
+          {!isTeacher && status === "on_review" && onApprove && onReject && (
+            <>
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => onApprove(program.id)}
+                disabled={isSubmitting}
+                className="gap-1 bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Одобрить
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => onReject(program.id)}
+                disabled={isSubmitting}
+                className="gap-1"
+              >
+                <XCircle className="h-4 w-4" />
+                Отклонить
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </Card>
@@ -132,12 +200,14 @@ function ProgramFormDialog({
   program,
   onSubmit,
   isLoading,
+  isTeacher = false,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   program?: Program
   onSubmit: (data: { title: string; description: string | null; status: string }) => void
   isLoading: boolean
+  isTeacher?: boolean
 }) {
   const [title, setTitle] = useState(program?.title ?? "")
   const [description, setDescription] = useState(program?.description ?? "")
@@ -146,7 +216,9 @@ function ProgramFormDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
-    onSubmit({ title: title.trim(), description: description || null, status })
+    // Teachers always use DRAFT or ON_REVIEW status, never APPROVED/REJECTED
+    const finalStatus = isTeacher && (status === "approved" || status === "rejected") ? "draft" : status
+    onSubmit({ title: title.trim(), description: description || null, status: finalStatus })
   }
 
   return (
@@ -177,20 +249,22 @@ function ProgramFormDialog({
               className="mt-1 w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground min-h-20 resize-none"
             />
           </div>
-          <div>
-            <Label htmlFor="status">Статус</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger id="status" className="mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Черновик</SelectItem>
-                <SelectItem value="on_review">На проверке</SelectItem>
-                <SelectItem value="approved">Одобрена</SelectItem>
-                <SelectItem value="rejected">Отклонена</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {!isTeacher && (
+            <div>
+              <Label htmlFor="status">Статус</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger id="status" className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Черновик</SelectItem>
+                  <SelectItem value="on_review">На проверке</SelectItem>
+                  <SelectItem value="approved">Одобрена</SelectItem>
+                  <SelectItem value="rejected">Отклонена</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Отмена
@@ -215,10 +289,14 @@ const PROGRAM_EXPORT_COLUMNS: ExportColumn[] = [
 function ProgramsPage() {
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const queryClient = useQueryClient()
+  const { user: currentUser } = useAuth()
   const [search, setSearch] = useState("")
   const [formOpen, setFormOpen] = useState(false)
   const [editingProgram, setEditingProgram] = useState<Program | undefined>()
   const [exportOpen, setExportOpen] = useState(false)
+
+  const isTeacher = currentUser?.role?.toLowerCase() === "teacher"
+  const isAdmin = currentUser?.role?.toLowerCase() === "admin" || currentUser?.is_superuser
 
   const { data: programsResponse } = useQuery({
     queryKey: ["programs"],
@@ -258,6 +336,33 @@ function ProgramsPage() {
       setEditingProgram(undefined)
     },
     onError: () => showErrorToast("Ошибка при обновлении"),
+  })
+
+  const submitForReviewMutation = useMutation({
+    mutationFn: (programId: string) => submitProgramForReview(programId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] })
+      showSuccessToast("Программа отправлена на согласование")
+    },
+    onError: () => showErrorToast("Ошибка при отправке на согласование"),
+  })
+
+  const approveMutation = useMutation({
+    mutationFn: (programId: string) => updateProgram(programId, { status: "approved" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] })
+      showSuccessToast("Программа одобрена")
+    },
+    onError: () => showErrorToast("Ошибка при одобрении"),
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: (programId: string) => updateProgram(programId, { status: "rejected" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] })
+      showSuccessToast("Программа отклонена")
+    },
+    onError: () => showErrorToast("Ошибка при отклонении"),
   })
 
   const kpiByStatus = useMemo(() => {
@@ -310,30 +415,34 @@ function ProgramsPage() {
             />
           </div>
           <div className="flex items-center gap-3">
-            <ImportDialog
-              trigger={<><Upload className="w-4 h-4" />Программы</>}
-              title="Импорт программ"
-              description="CSV файл с программами"
-              templateColumns={["title", "description", "status"]}
-              templateColumnLabels={{ title: "Название", description: "Описание", status: "Статус" }}
-              templateFilename="programs_template.csv"
-              onImport={importProgramsCSV}
-              onSuccess={() => queryClient.invalidateQueries({ queryKey: ["programs"] })}
-            />
-            <ImportDialog
-              trigger={<><Upload className="w-4 h-4" />Модули</>}
-              title="Импорт модулей"
-              description="CSV файл с модулями"
-              templateColumns={["title", "description", "program_title", "module_type"]}
-              templateColumnLabels={{ title: "Название", description: "Описание", program_title: "Программа", module_type: "Тип" }}
-              templateFilename="modules_template.csv"
-              onImport={importModulesCSV}
-              onSuccess={() => queryClient.invalidateQueries({ queryKey: ["modules"] })}
-            />
-            <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} className="gap-2">
-              <FileDown className="w-4 h-4" />
-              Экспорт
-            </Button>
+            {!isTeacher && (
+              <>
+                <ImportDialog
+                  trigger={<><Upload className="w-4 h-4" />Программы</>}
+                  title="Импорт программ"
+                  description="CSV файл с программами"
+                  templateColumns={["title", "description", "status"]}
+                  templateColumnLabels={{ title: "Название", description: "Описание", status: "Статус" }}
+                  templateFilename="programs_template.csv"
+                  onImport={importProgramsCSV}
+                  onSuccess={() => queryClient.invalidateQueries({ queryKey: ["programs"] })}
+                />
+                <ImportDialog
+                  trigger={<><Upload className="w-4 h-4" />Модули</>}
+                  title="Импорт модулей"
+                  description="CSV файл с модулями"
+                  templateColumns={["title", "description", "program_title", "module_type"]}
+                  templateColumnLabels={{ title: "Название", description: "Описание", program_title: "Программа", module_type: "Тип" }}
+                  templateFilename="modules_template.csv"
+                  onImport={importModulesCSV}
+                  onSuccess={() => queryClient.invalidateQueries({ queryKey: ["modules"] })}
+                />
+                <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} className="gap-2">
+                  <FileDown className="w-4 h-4" />
+                  Экспорт
+                </Button>
+              </>
+            )}
             <Button onClick={handleCreateProgram} size="sm" className="gap-2">
               <Plus className="w-4 h-4" />
               Создать
@@ -353,14 +462,16 @@ function ProgramsPage() {
         <p className="body-md text-mute max-w-2xl">Полный каталог образовательных программ.</p>
       </div>
 
-      <div className="px-10">
-        <div className="grid grid-cols-4 gap-0 py-6 border-y border-hair">
-          <KPIBar value={kpiByStatus.draft} label="ЧЕРНОВИК" />
-          <KPIBar value={kpiByStatus.on_review} label="НА ПРОВЕРКЕ" />
-          <KPIBar value={kpiByStatus.approved} label="ОДОБРЕНА" />
-          <KPIBar value={kpiByStatus.rejected} label="ОТКЛОНЕНА" />
+      {!isTeacher && (
+        <div className="px-10">
+          <div className="grid grid-cols-4 gap-0 py-6 border-y border-hair">
+            <KPIBar value={kpiByStatus.draft} label="ЧЕРНОВИК" />
+            <KPIBar value={kpiByStatus.on_review} label="НА ПРОВЕРКЕ" />
+            <KPIBar value={kpiByStatus.approved} label="ОДОБРЕНА" />
+            <KPIBar value={kpiByStatus.rejected} label="ОТКЛОНЕНА" />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="px-10 py-12">
         {filteredPrograms.length > 0 ? (
@@ -372,6 +483,11 @@ function ProgramsPage() {
                   moduleCount={getModuleCount(program.id)}
                   groupCount={getGroupCount(program.id)}
                   onEdit={handleEditProgram}
+                  isTeacher={isTeacher}
+                  onSubmitForReview={isTeacher ? (id) => submitForReviewMutation.mutate(id) : undefined}
+                  onApprove={isAdmin ? (id) => approveMutation.mutate(id) : undefined}
+                  onReject={isAdmin ? (id) => rejectMutation.mutate(id) : undefined}
+                  isSubmitting={submitForReviewMutation.isPending || approveMutation.isPending || rejectMutation.isPending}
                 />
               </div>
             ))}
@@ -389,16 +505,19 @@ function ProgramsPage() {
         program={editingProgram}
         onSubmit={handleSubmit}
         isLoading={createMutation.isPending || updateMutation.isPending}
+        isTeacher={isTeacher}
       />
 
-      <ExportPDFDialog
-        open={exportOpen}
-        onOpenChange={setExportOpen}
-        title="Программы обучения"
-        columns={PROGRAM_EXPORT_COLUMNS}
-        data={filteredPrograms as unknown as Record<string, unknown>[]}
-        exportType="programs"
-      />
+      {!isTeacher && (
+        <ExportPDFDialog
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          title="Программы обучения"
+          columns={PROGRAM_EXPORT_COLUMNS}
+          data={filteredPrograms as unknown as Record<string, unknown>[]}
+          exportType="programs"
+        />
+      )}
     </div>
   )
 }

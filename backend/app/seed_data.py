@@ -7,7 +7,7 @@ from app.models.enums import UserRole, ProgramStatus, GroupStatus, EnrollmentSta
 from app.models import (
     User, UserCreate, Program, ProgramCreate, Group, GroupCreate,
     Enrollment, EnrollmentCreate, Progress, ProgressCreate,
-    Module, ModuleCreate, Lesson, LessonCreate
+    Module, ModuleCreate, Lesson, LessonCreate, ProgramTeacher
 )
 from app.crud import crud_user, crud_program, crud_module, crud_group, crud_enrollment, crud_progress, crud_lesson
 
@@ -372,6 +372,34 @@ def seed_database(session: Session) -> None:
             )
             crud_progress.create_progress(session=session, progress_create=progress_in)
             logger.info(f"✓ {student.full_name} - {module.title}: {status.upper()} ({score}%)" if score else f"✓ {student.full_name} - {module.title}: {status.upper()}")
+
+    # ==================== PROGRAM TEACHERS ====================
+
+    # Link teachers to programs
+    try:
+        program_teacher_links = [
+            (program1, teacher1),  # Python Basics - teacher1
+            (program2, teacher2),  # Web Development - teacher2
+            (program3, teacher1),  # Data Science - teacher1
+            (program3, teacher2),  # Data Science - teacher2 (both teach this)
+        ]
+
+        for program, teacher in program_teacher_links:
+            existing = session.exec(
+                select(ProgramTeacher).where(
+                    (ProgramTeacher.program_id == program.id) &
+                    (ProgramTeacher.teacher_id == teacher.id)
+                )
+            ).first()
+            if not existing:
+                pt = ProgramTeacher(program_id=program.id, teacher_id=teacher.id)
+                session.add(pt)
+                logger.info(f"✓ Linked {teacher.full_name} to {program.title}")
+
+        session.flush()
+    except Exception as e:
+        logger.warning(f"⚠ Could not link teachers to programs (table might not exist): {e}")
+        session.rollback()
 
     # ==================== LESSONS ====================
 

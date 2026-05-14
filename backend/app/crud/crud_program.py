@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlmodel import Session, select, func
 
-from app.models import Program, ProgramCreate, ProgramUpdate
+from app.models import Program, ProgramCreate, ProgramUpdate, ProgramTeacher, User
 from app.models.utils import get_datetime_utc
 
 
@@ -83,3 +83,49 @@ def delete_program(
 ) -> None:
     session.delete(db_program)
     session.commit()
+
+
+def get_programs_by_teacher(
+    *,
+    session: Session,
+    teacher_id: UUID,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Program]:
+    statement = (
+        select(Program)
+        .join(ProgramTeacher)
+        .where(ProgramTeacher.teacher_id == teacher_id)
+        .offset(skip)
+        .limit(limit)
+    )
+    return session.exec(statement).all()
+
+
+def add_teacher_to_program(
+    *,
+    session: Session,
+    program_id: UUID,
+    teacher_id: UUID,
+) -> ProgramTeacher:
+    db_obj = ProgramTeacher(program_id=program_id, teacher_id=teacher_id)
+    session.add(db_obj)
+    session.commit()
+    session.refresh(db_obj)
+    return db_obj
+
+
+def remove_teacher_from_program(
+    *,
+    session: Session,
+    program_id: UUID,
+    teacher_id: UUID,
+) -> None:
+    statement = select(ProgramTeacher).where(
+        (ProgramTeacher.program_id == program_id)
+        & (ProgramTeacher.teacher_id == teacher_id)
+    )
+    db_obj = session.exec(statement).first()
+    if db_obj:
+        session.delete(db_obj)
+        session.commit()

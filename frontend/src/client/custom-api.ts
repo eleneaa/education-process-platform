@@ -58,6 +58,21 @@ export async function updateProgram(id: string, body: Partial<ProgramCreate>) {
   return data
 }
 
+export async function submitProgramForReview(id: string) {
+  const { data } = await api.patch(`/programs/${id}`, { status: "on_review" })
+  return data
+}
+
+export async function addTeacherToProgram(programId: string, teacherId: string) {
+  const { data } = await api.post(`/programs/${programId}/teachers`, { teacher_id: teacherId })
+  return data
+}
+
+export async function removeTeacherFromProgram(programId: string, teacherId: string) {
+  const { data } = await api.delete(`/programs/${programId}/teachers/${teacherId}`)
+  return data
+}
+
 // ─── Modules ──────────────────────────────────────────────────────────────────
 
 export async function getModules(programId?: string): Promise<ModulesResponse> {

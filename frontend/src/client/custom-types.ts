@@ -2,6 +2,12 @@
 
 // ─── Programs ─────────────────────────────────────────────────────────────────
 
+export type Teacher = {
+  id: string
+  full_name?: string | null
+  email?: string | null
+}
+
 export type Program = {
   id: string
   title: string
@@ -9,6 +15,7 @@ export type Program = {
   status?: string | null
   created_at?: string | null
   updated_at?: string | null
+  teachers?: Teacher[] | null
 }
 
 export type ProgramsResponse = {

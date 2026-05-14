@@ -7,6 +7,7 @@ from sqlalchemy import DateTime
 from . import User
 from .enums import ProgramStatus
 from .utils import get_datetime_utc
+from .program_teacher import ProgramTeacher
 
 
 class ProgramBase(SQLModel):
@@ -32,6 +33,7 @@ class ProgramPublic(ProgramBase):
     status: ProgramStatus = Field(default=ProgramStatus.DRAFT)
     created_by_id: uuid.UUID | None = None
     recommended_next_program_id: uuid.UUID | None = None
+    teachers: list["User"] = []
 
 
 class ProgramsPublic(SQLModel):
@@ -67,4 +69,8 @@ class Program (ProgramBase, table=True):
 
     groups: list["Group"] = Relationship(
         back_populates="program"
+    )
+    teachers: list[User] = Relationship(
+        back_populates="teaching_programs",
+        link_model=ProgramTeacher,
     )

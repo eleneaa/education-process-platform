@@ -48,6 +48,7 @@ from .program import (Program,
                       ProgramsPublic,
                       ProgramUpdate,
                       ProgramCreate)
+from .program_teacher import ProgramTeacher
 from .lesson import (Lesson, LessonCreate, LessonUpdate, LessonPublic, LessonsPublic)
 from .teacher_recommendation import (TeacherRecommendation,
                                      TeacherRecommendationBase,

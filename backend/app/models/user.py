@@ -8,6 +8,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from .utils import get_datetime_utc
 from .enums import UserRole
+from .program_teacher import ProgramTeacher
 
 
 # Shared properties
@@ -66,6 +67,10 @@ class User(UserBase, table=True):
     )
     teaching_groups: list["Group"] = Relationship(
         back_populates="teacher"
+    )
+    teaching_programs: list["Program"] = Relationship(
+        back_populates="teachers",
+        link_model=ProgramTeacher,
     )
     enrollments: list["Enrollment"] = Relationship(
         back_populates="student"
