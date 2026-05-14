@@ -342,12 +342,12 @@ function GroupCard({
 
   const color = getGroupColor(group.id)
   const borderColors: Record<string, string> = {
-    "border-blue-600": "#2563eb",
-    "border-purple-600": "#9333ea",
-    "border-cyan-600": "#0891b2",
-    "border-emerald-600": "#059669",
-    "border-amber-600": "#b45309",
-    "border-pink-600": "#db2777",
+    "border-blue-600": "#6B9BD1",
+    "border-purple-600": "#D4A5D9",
+    "border-cyan-600": "#A8D5BA",
+    "border-emerald-600": "#F4A460",
+    "border-amber-600": "#FF9999",
+    "border-pink-600": "#FFD700",
   }
 
   return (

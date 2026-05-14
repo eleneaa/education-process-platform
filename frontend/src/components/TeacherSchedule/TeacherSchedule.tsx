@@ -14,12 +14,12 @@ const monthNames = [
 const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
 
 const lessonColors = [
-  { bg: "bg-blue-500/30 dark:bg-blue-400/25", border: "border-blue-400 dark:border-blue-300", text: "text-blue-700 dark:text-blue-300", dot: "bg-blue-500 dark:bg-blue-400" },
-  { bg: "bg-purple-500/30 dark:bg-purple-400/25", border: "border-purple-400 dark:border-purple-300", text: "text-purple-700 dark:text-purple-300", dot: "bg-purple-500 dark:bg-purple-400" },
-  { bg: "bg-cyan-500/30 dark:bg-cyan-400/25", border: "border-cyan-400 dark:border-cyan-300", text: "text-cyan-700 dark:text-cyan-300", dot: "bg-cyan-500 dark:bg-cyan-400" },
-  { bg: "bg-emerald-500/30 dark:bg-emerald-400/25", border: "border-emerald-400 dark:border-emerald-300", text: "text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-500 dark:bg-emerald-400" },
-  { bg: "bg-amber-500/30 dark:bg-amber-400/25", border: "border-amber-400 dark:border-amber-300", text: "text-amber-700 dark:text-amber-300", dot: "bg-amber-500 dark:bg-amber-400" },
-  { bg: "bg-pink-500/30 dark:bg-pink-400/25", border: "border-pink-400 dark:border-pink-300", text: "text-pink-700 dark:text-pink-300", dot: "bg-pink-500 dark:bg-pink-400" },
+  { bg: "bg-blue-100", border: "border-blue-300", text: "text-blue-700", dot: "bg-blue-400", hex: "#6B9BD1" },
+  { bg: "bg-purple-100", border: "border-purple-300", text: "text-purple-700", dot: "bg-purple-400", hex: "#D4A5D9" },
+  { bg: "bg-cyan-100", border: "border-cyan-300", text: "text-cyan-700", dot: "bg-cyan-400", hex: "#A8D5BA" },
+  { bg: "bg-amber-100", border: "border-amber-300", text: "text-amber-700", dot: "bg-amber-400", hex: "#F4A460" },
+  { bg: "bg-pink-100", border: "border-pink-300", text: "text-pink-700", dot: "bg-pink-400", hex: "#FF9999" },
+  { bg: "bg-yellow-100", border: "border-yellow-300", text: "text-yellow-700", dot: "bg-yellow-400", hex: "#FFD700" },
 ]
 
 const getLessonColor = (groupId: string) => {

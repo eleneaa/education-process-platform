@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button"
 import type { Lesson } from "@/client/custom-api"
 
 const lessonColors = [
-  { bg: "bg-blue-500/20", border: "border-blue-600", text: "text-blue-700", dot: "bg-blue-600" },
-  { bg: "bg-purple-500/20", border: "border-purple-600", text: "text-purple-700", dot: "bg-purple-600" },
-  { bg: "bg-cyan-500/20", border: "border-cyan-600", text: "text-cyan-700", dot: "bg-cyan-600" },
-  { bg: "bg-emerald-500/20", border: "border-emerald-600", text: "text-emerald-700", dot: "bg-emerald-600" },
-  { bg: "bg-amber-500/20", border: "border-amber-600", text: "text-amber-700", dot: "bg-amber-600" },
-  { bg: "bg-pink-500/20", border: "border-pink-600", text: "text-pink-700", dot: "bg-pink-600" },
+  { bg: "bg-blue-100", border: "border-blue-300", text: "text-blue-700", dot: "bg-blue-400" },
+  { bg: "bg-purple-100", border: "border-purple-300", text: "text-purple-700", dot: "bg-purple-400" },
+  { bg: "bg-cyan-100", border: "border-cyan-300", text: "text-cyan-700", dot: "bg-cyan-400" },
+  { bg: "bg-amber-100", border: "border-amber-300", text: "text-amber-700", dot: "bg-amber-400" },
+  { bg: "bg-pink-100", border: "border-pink-300", text: "text-pink-700", dot: "bg-pink-400" },
+  { bg: "bg-yellow-100", border: "border-yellow-300", text: "text-yellow-700", dot: "bg-yellow-400" },
 ]
 
 const getLessonColor = (groupId: string) => {
