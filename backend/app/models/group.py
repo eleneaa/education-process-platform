@@ -26,6 +26,7 @@ class GroupCreate(GroupBase):
 class GroupUpdate(SQLModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=255)
+    program_id: uuid.UUID | None = None
     teacher_id: uuid.UUID | None = None
     start_date: datetime | None = None
     end_date: datetime | None = None

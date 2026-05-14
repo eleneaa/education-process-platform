@@ -193,8 +193,8 @@ function GroupDetailPage() {
     setEditName(group.name)
     setEditProgramId(group.program_id)
     setEditTeacherId(group.teacher_id || "")
-    setEditStartDate(group.start_date || "")
-    setEditEndDate(group.end_date || "")
+    setEditStartDate(group.start_date ? group.start_date.split("T")[0] : "")
+    setEditEndDate(group.end_date ? group.end_date.split("T")[0] : "")
     setEditMode(true)
   }
 
