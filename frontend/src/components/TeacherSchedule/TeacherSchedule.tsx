@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { ChevronLeft, ChevronRight, Clock, MapPin, X, BookOpen, User } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, MapPin, X, BookOpen, Users } from "lucide-react"
 import { useState, useMemo } from "react"
 import { getLessons, getGroups, getPrograms, getUsers } from "@/client/custom-api"
 import { Button } from "@/components/ui/button"
