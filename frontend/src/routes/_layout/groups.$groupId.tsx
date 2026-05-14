@@ -27,7 +27,7 @@ function GroupDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [activeTab, setActiveTab] = useState("info")
+  const [activeTab, setActiveTab] = useState("students")
   const [editMode, setEditMode] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [addStudentOpen, setAddStudentOpen] = useState(false)
@@ -380,38 +380,11 @@ function GroupDetailPage() {
         <Card>
           <CardContent className="p-8">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4 mb-8">
-                <TabsTrigger value="info">Информация</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 mb-8">
                 <TabsTrigger value="students">Студенты</TabsTrigger>
                 <TabsTrigger value="attendance">Посещаемость</TabsTrigger>
                 <TabsTrigger value="progress">Прогресс</TabsTrigger>
               </TabsList>
-
-              {/* Tab: Info */}
-              <TabsContent value="info">
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium">Название группы</Label>
-                    <p className="mt-1 text-foreground">{group.name}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Программа обучения</Label>
-                    <p className="mt-1 text-foreground">{program?.title || "Не назначена"}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Преподаватель</Label>
-                    <p className="mt-1 text-foreground">{teacher?.full_name || teacher?.email || "Не назначен"}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Период обучения</Label>
-                    <p className="mt-1 text-foreground">
-                      {editStartDate && editEndDate
-                        ? `${new Date(editStartDate).toLocaleDateString("ru-RU")} - ${new Date(editEndDate).toLocaleDateString("ru-RU")}`
-                        : "Не указан"}
-                    </p>
-                  </div>
-                </div>
-              </TabsContent>
 
               {/* Tab: Students */}
               <TabsContent value="students">
