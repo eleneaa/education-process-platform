@@ -108,12 +108,16 @@ def _update_progress_from_attendance(session: Session, attendance: Attendance) -
             status=ProgressStatus.NOT_STARTED,
         )
         session.add(progress)
+        session.flush()
 
     # Update status based on attendance
-    if attendance.status == "present":
+    if attendance.status == AttendanceStatus.present:
         if progress.status == ProgressStatus.NOT_STARTED:
             progress.status = ProgressStatus.IN_PROGRESS
-    # For now, mark as IN_PROGRESS if attended, COMPLETED if all lessons attended (can be enhanced)
+            session.add(progress)
+    elif attendance.status == AttendanceStatus.absent:
+        # If marked absent, keep or reset to NOT_STARTED
+        pass
 
     session.commit()
 
