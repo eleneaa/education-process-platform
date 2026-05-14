@@ -352,7 +352,7 @@ function GroupCard({
   }
 
   return (
-    <>
+    <div>
       <Link to="/groups/$groupId" params={{ groupId: group.id }}>
         <Card
           className="group overflow-hidden rounded-2xl backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
@@ -421,7 +421,7 @@ function GroupCard({
         title="Удалить группу?"
         description={`Вы уверены, что хотите удалить группу "${group.name}"? Это действие необратимо.`}
       />
-    </>
+    </div>
   )
 }
 
