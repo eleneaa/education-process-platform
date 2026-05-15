@@ -79,6 +79,114 @@ const ADMISSION_EXPORT_COLUMNS: ExportColumn[] = [
   },
 ]
 
+// ─── Details Dialog ────────────────────────────────────────────────────────
+
+function DetailsDialog({
+  open,
+  onOpenChange,
+  request,
+  onSave,
+  isSaving,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  request?: AdmissionRequest
+  onSave: (data: any) => void
+  isSaving: boolean
+}) {
+  const [formData, setFormData] = useState({
+    full_name: request?.full_name || "",
+    email: request?.email || "",
+    phone_number: request?.phone_number || "",
+    program_interest: request?.program_interest || "",
+    comment: request?.comment || "",
+    source: request?.source || "website",
+  })
+
+  const handleSave = () => {
+    onSave(formData)
+  }
+
+  if (!request) return null
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Детали заявки</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">ФИО</Label>
+            <Input
+              value={formData.full_name}
+              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Email</Label>
+            <Input
+              type="email"
+              value={formData.email || ""}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Телефон</Label>
+            <Input
+              value={formData.phone_number}
+              onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Интерес к программе</Label>
+            <Input
+              value={formData.program_interest || ""}
+              onChange={(e) => setFormData({ ...formData, program_interest: e.target.value })}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Источник</Label>
+            <Select value={formData.source} onValueChange={(value) => setFormData({ ...formData, source: value })}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="website">Сайт</SelectItem>
+                <SelectItem value="telegram">Telegram</SelectItem>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="phone">Телефон</SelectItem>
+                <SelectItem value="offline">Офлайн</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Комментарий</Label>
+            <Input
+              value={formData.comment || ""}
+              onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+              className="mt-1"
+              placeholder="Внутренний комментарий"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Отмена
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Сохранение..." : "Сохранить"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ─── Create User Dialog ─────────────────────────────────────────────────────
 
 function CreateUserDialog({
@@ -291,6 +399,7 @@ interface KanbanColumnProps {
   onStatusChange: (requestId: string, newStatus: string) => void
   onAssignedToChange: (requestId: string, adminId: string | null) => void
   onCreateUser: (requestId: string) => void
+  onOpenDetails: (request: AdmissionRequest) => void
   admins: Array<{ id: string; email: string; full_name: string | null }>
 }
 
@@ -302,6 +411,7 @@ function KanbanColumn({
   onStatusChange,
   onAssignedToChange,
   onCreateUser,
+  onOpenDetails,
   admins,
 }: KanbanColumnProps) {
   const handleDragOver = (e: React.DragEvent) => {
@@ -335,9 +445,10 @@ function KanbanColumn({
         {requests.map((req) => (
           <Card
             key={req.id}
-            className="border-hair rounded-2xl p-4 flex flex-col gap-3 hover:shadow-sm transition-shadow cursor-move"
+            className="border-hair rounded-2xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-move hover:bg-surface-1"
             draggable
             onDragStart={(e) => e.dataTransfer.setData("requestId", req.id)}
+            onClick={() => onOpenDetails(req)}
           >
             {/* Header: ID + Date */}
             <div className="flex items-start justify-between gap-2">
@@ -362,7 +473,7 @@ function KanbanColumn({
 
             {/* Admin assignment (in_review status) */}
             {status === "in_review" && (
-              <div className="pt-2">
+              <div className="pt-2" onClick={(e) => e.stopPropagation()}>
                 <Label className="text-xs font-medium">Ответственный</Label>
                 <Select
                   value={req.assigned_to_id || "_none"}
@@ -385,7 +496,7 @@ function KanbanColumn({
 
             {/* Create user button (approved status) */}
             {status === "approved" && (
-              <div className="pt-2">
+              <div className="pt-2" onClick={(e) => e.stopPropagation()}>
                 <Button
                   size="sm"
                   className="w-full"
@@ -423,6 +534,8 @@ function AdmissionRequestsPage() {
     password?: string
     fullName?: string
   }>({})
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
+  const [selectedRequest, setSelectedRequest] = useState<AdmissionRequest | undefined>()
 
   const { data: requestsResponse } = useQuery({
     queryKey: ["admission-requests"],
@@ -483,6 +596,17 @@ function AdmissionRequestsPage() {
       showSuccessToast("Аккаунт создан")
     },
     onError: () => showErrorToast("Ошибка при создании аккаунта"),
+  })
+
+  const saveDetailsMutation = useMutation({
+    mutationFn: (data: any) =>
+      updateAdmissionRequest(selectedRequest!.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admission-requests"] })
+      setDetailsDialogOpen(false)
+      showSuccessToast("Заявка обновлена")
+    },
+    onError: () => showErrorToast("Ошибка при сохранении"),
   })
 
   // Filter by search
@@ -597,6 +721,10 @@ function AdmissionRequestsPage() {
             onStatusChange={handleStatusChange}
             onAssignedToChange={handleAssignedToChange}
             onCreateUser={handleCreateUser}
+            onOpenDetails={(req) => {
+              setSelectedRequest(req)
+              setDetailsDialogOpen(true)
+            }}
             admins={admins}
           />
           <KanbanColumn
@@ -607,6 +735,10 @@ function AdmissionRequestsPage() {
             onStatusChange={handleStatusChange}
             onAssignedToChange={handleAssignedToChange}
             onCreateUser={handleCreateUser}
+            onOpenDetails={(req) => {
+              setSelectedRequest(req)
+              setDetailsDialogOpen(true)
+            }}
             admins={admins}
           />
           <KanbanColumn
@@ -617,6 +749,10 @@ function AdmissionRequestsPage() {
             onStatusChange={handleStatusChange}
             onAssignedToChange={handleAssignedToChange}
             onCreateUser={handleCreateUser}
+            onOpenDetails={(req) => {
+              setSelectedRequest(req)
+              setDetailsDialogOpen(true)
+            }}
             admins={admins}
           />
           <KanbanColumn
@@ -627,6 +763,10 @@ function AdmissionRequestsPage() {
             onStatusChange={handleStatusChange}
             onAssignedToChange={handleAssignedToChange}
             onCreateUser={handleCreateUser}
+            onOpenDetails={(req) => {
+              setSelectedRequest(req)
+              setDetailsDialogOpen(true)
+            }}
             admins={admins}
           />
         </div>
@@ -634,6 +774,14 @@ function AdmissionRequestsPage() {
 
       {/* Dialogs */}
       <CreateRequestDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+
+      <DetailsDialog
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        request={selectedRequest}
+        onSave={(data) => saveDetailsMutation.mutate(data)}
+        isSaving={saveDetailsMutation.isPending}
+      />
 
       <CreateUserDialog
         open={createUserDialogOpen}
