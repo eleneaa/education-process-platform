@@ -9,6 +9,8 @@ import {
   updateAdmissionRequest,
   importAdmissionRequestsCSV,
   createUserFromAdmission,
+  approveAdmissionRequest,
+  getGroups,
 } from "@/client/custom-api"
 import type { AdmissionRequest } from "@/client/custom-types"
 import { Badge } from "@/components/ui/badge"
@@ -89,12 +91,14 @@ function DetailsDialog({
   request,
   onSave,
   isSaving,
+  onApproveClick,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   request?: AdmissionRequest
   onSave: (data: any) => void
   isSaving: boolean
+  onApproveClick?: () => void
 }) {
   const [formData, setFormData] = useState({
     full_name: "",
@@ -217,10 +221,15 @@ function DetailsDialog({
             />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Отмена
           </Button>
+          {request?.status && ["new", "in_review"].includes(request.status) && onApproveClick && (
+            <Button variant="accent" onClick={onApproveClick}>
+              Одобрить
+            </Button>
+          )}
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? "Сохранение..." : "Сохранить"}
           </Button>
@@ -464,6 +473,70 @@ function CreateRequestDialog({
   )
 }
 
+// ─── Approval Dialog ──────────────────────────────────────────────────────────
+
+function ApprovalDialog({
+  open,
+  onOpenChange,
+  request,
+  onApprove,
+  isApproving,
+  groups,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  request?: AdmissionRequest
+  onApprove: (groupId: string) => void
+  isApproving: boolean
+  groups: Array<{ id: string; name: string }>
+}) {
+  const [selectedGroupId, setSelectedGroupId] = useState("")
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Одобрить заявку — {request?.full_name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="group" className="text-sm font-medium">
+              Выберите группу *
+            </Label>
+            <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+              <SelectTrigger className="mt-1" id="group">
+                <SelectValue placeholder="Выберите группу..." />
+              </SelectTrigger>
+              <SelectContent>
+                {groups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Отмена
+          </Button>
+          <Button
+            onClick={() => {
+              if (selectedGroupId) {
+                onApprove(selectedGroupId)
+              }
+            }}
+            disabled={!selectedGroupId || isApproving}
+          >
+            {isApproving ? "Одобрение..." : "Одобрить и зачислить"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ─── Kanban Column ─────────────────────────────────────────────────────────
 
 interface KanbanColumnProps {
@@ -629,6 +702,8 @@ function AdmissionRequestsPage() {
   }>({})
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<AdmissionRequest | undefined>()
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
+  const [requestToApprove, setRequestToApprove] = useState<AdmissionRequest | undefined>()
 
   const { data: requestsResponse, isLoading } = useQuery({
     queryKey: ["admission-requests"],
@@ -645,6 +720,11 @@ function AdmissionRequestsPage() {
       })
       return response.json()
     },
+  })
+
+  const { data: groupsResponse } = useQuery({
+    queryKey: ["groups"],
+    queryFn: getGroups,
   })
 
   const requests = requestsResponse?.data ?? []
@@ -699,6 +779,18 @@ function AdmissionRequestsPage() {
       showSuccessToast("Заявка обновлена")
     },
     onError: () => showErrorToast("Ошибка при сохранении"),
+  })
+
+  const approveMutation = useMutation({
+    mutationFn: ({ id, groupId }: { id: string; groupId: string }) =>
+      approveAdmissionRequest(id, groupId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admission-requests"] })
+      setApprovalDialogOpen(false)
+      setRequestToApprove(undefined)
+      showSuccessToast("Заявка одобрена и студент зачислен в группу")
+    },
+    onError: () => showErrorToast("Ошибка при одобрении заявки"),
   })
 
   // Filter by search
@@ -893,6 +985,26 @@ function AdmissionRequestsPage() {
         request={selectedRequest}
         onSave={(data) => saveDetailsMutation.mutate(data)}
         isSaving={saveDetailsMutation.isPending}
+        onApproveClick={() => {
+          if (selectedRequest) {
+            setRequestToApprove(selectedRequest)
+            setApprovalDialogOpen(true)
+            setDetailsDialogOpen(false)
+          }
+        }}
+      />
+
+      <ApprovalDialog
+        open={approvalDialogOpen}
+        onOpenChange={setApprovalDialogOpen}
+        request={requestToApprove}
+        onApprove={(groupId) => {
+          if (requestToApprove) {
+            approveMutation.mutate({ id: requestToApprove.id, groupId })
+          }
+        }}
+        isApproving={approveMutation.isPending}
+        groups={groupsResponse?.data ?? []}
       />
 
       <CreateUserDialog

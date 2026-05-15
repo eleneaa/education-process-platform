@@ -8,6 +8,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
+from app.initial_data import init
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,10 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── Startup ──────────────────────────────────────────────────────────────
+    logger.info("Initializing database with seed data...")
+    init()
+    logger.info("Database initialized")
+
     if settings.telegram_enabled:
         if not settings.BACKEND_PUBLIC_URL:
             logger.warning(
