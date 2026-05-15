@@ -8,6 +8,7 @@ import {
   Settings,
   BarChart3,
   LogOut,
+  Box,
   LucideIcon,
 } from "lucide-react"
 
@@ -33,7 +34,7 @@ export function SidebarNav({
   return (
     <div
       className={cn(
-        "flex flex-col h-screen w-64 border-r border-border",
+        "flex flex-col h-screen w-64 border-r border-border gap-12",
         "bg-gradient-to-b from-white via-white to-secondary/10",
         "dark:from-slate-800 dark:via-slate-800 dark:to-slate-700/50",
         className,
@@ -50,8 +51,8 @@ export function SidebarNav({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-6 space-y-1">
-        {items.map((item) => {
+      <nav className="flex-1 overflow-y-auto px-3 pb-6 space-y-1">
+        {items.map((item, idx) => {
           const Icon = item.icon
           return (
             <a

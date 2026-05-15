@@ -40,33 +40,19 @@ const useAuth = () => {
   })
 
   const login = async (data: AccessToken) => {
-    const params = new URLSearchParams()
-    params.append("username", data.username)
-    params.append("password", data.password)
+    const formData = new FormData()
+    formData.append("username", data.username)
+    formData.append("password", data.password)
 
     const url = `${OpenAPI.BASE}/api/v1/login/access-token`
-    console.log("Login attempt:", { url, username: data.username, paramsString: params.toString() })
 
     try {
-      const response = await axios.post(
-        url,
-        params.toString(),
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          withCredentials: true,
-        }
-      )
-      console.log("Login success:", response.data)
+      const response = await axios.post(url, formData, {
+        withCredentials: true,
+      })
       localStorage.setItem("access_token", response.data.access_token)
     } catch (error: any) {
-      console.error("Login error:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-      })
+      console.error("Login error:", error.response?.data || error.message)
       throw error
     }
   }
