@@ -107,6 +107,43 @@ def seed_database(session: Session) -> None:
         student5 = crud_user.create_user(session=session, user_create=student5_in)
         logger.info("✓ Created student: student5@example.com")
 
+    # More students for richer test data
+    student6 = session.exec(select(User).where(User.email == "student6@example.com")).first()
+    if not student6:
+        student6_in = UserCreate(
+            email="student6@example.com",
+            password="password123",
+            full_name="Fiona Green",
+            role=UserRole.STUDENT,
+            is_active=True,
+        )
+        student6 = crud_user.create_user(session=session, user_create=student6_in)
+        logger.info("✓ Created student: student6@example.com")
+
+    student7 = session.exec(select(User).where(User.email == "student7@example.com")).first()
+    if not student7:
+        student7_in = UserCreate(
+            email="student7@example.com",
+            password="password123",
+            full_name="George Miller",
+            role=UserRole.STUDENT,
+            is_active=True,
+        )
+        student7 = crud_user.create_user(session=session, user_create=student7_in)
+        logger.info("✓ Created student: student7@example.com")
+
+    student8 = session.exec(select(User).where(User.email == "student8@example.com")).first()
+    if not student8:
+        student8_in = UserCreate(
+            email="student8@example.com",
+            password="password123",
+            full_name="Helen White",
+            role=UserRole.STUDENT,
+            is_active=False,  # Inactive student for testing
+        )
+        student8 = crud_user.create_user(session=session, user_create=student8_in)
+        logger.info("✓ Created student: student8@example.com (inactive)")
+
     # ==================== PROGRAMS ====================
 
     # Program 1: Python Basics
@@ -294,9 +331,37 @@ def seed_database(session: Session) -> None:
         group4 = crud_group.create_group(session=session, group_create=group4_in)
         logger.info("✓ Created group: Data Science Group")
 
+    # Python Group 3 - Finished
+    group5 = session.exec(select(Group).where(Group.name == "Python Group 3")).first()
+    if not group5:
+        group5_in = GroupCreate(
+            name="Python Group 3",
+            program_id=program1.id,
+            teacher_id=teacher1.id,
+            status=GroupStatus.FINISHED,
+            start_date=datetime.now() - timedelta(days=100),
+            end_date=datetime.now() - timedelta(days=10),
+        )
+        group5 = crud_group.create_group(session=session, group_create=group5_in)
+        logger.info("✓ Created group: Python Group 3 (finished)")
+
+    # Web Dev Group 2
+    group6 = session.exec(select(Group).where(Group.name == "Web Dev Group 2")).first()
+    if not group6:
+        group6_in = GroupCreate(
+            name="Web Dev Group 2",
+            program_id=program2.id,
+            teacher_id=teacher2.id,
+            status=GroupStatus.ACTIVE,
+            start_date=datetime.now() + timedelta(days=7),
+            end_date=datetime.now() + timedelta(days=97),
+        )
+        group6 = crud_group.create_group(session=session, group_create=group6_in)
+        logger.info("✓ Created group: Web Dev Group 2")
+
     # ==================== ENROLLMENTS ====================
 
-    # Group 1 enrollments
+    # Group enrollments
     enrollments = [
         (student1, group1, EnrollmentStatus.ACTIVE),
         (student1, group2, EnrollmentStatus.ACTIVE),
@@ -306,6 +371,13 @@ def seed_database(session: Session) -> None:
         (student4, group2, EnrollmentStatus.ACTIVE),
         (student4, group3, EnrollmentStatus.ACTIVE),
         (student5, group2, EnrollmentStatus.ACTIVE),
+        (student6, group1, EnrollmentStatus.ACTIVE),
+        (student6, group3, EnrollmentStatus.ACTIVE),
+        (student7, group1, EnrollmentStatus.ACTIVE),
+        (student7, group6, EnrollmentStatus.ACTIVE),
+        (student8, group1, EnrollmentStatus.ACTIVE),
+        (student2, group5, EnrollmentStatus.COMPLETED),  # Finished group
+        (student3, group5, EnrollmentStatus.COMPLETED),  # Finished group
     ]
 
     for student, group, status in enrollments:
@@ -356,6 +428,23 @@ def seed_database(session: Session) -> None:
         (student5, module1, "in_progress", 30),
         (student5, module2, "not_started", None),
         (student5, module3, "not_started", None),
+
+        # Student 6 - Fiona (Excellent)
+        (student6, module1, "completed", 98),
+        (student6, module2, "completed", 96),
+        (student6, module3, "in_progress", 90),
+        (student6, module4, "completed", 95),
+        (student6, module5, "in_progress", 88),
+
+        # Student 7 - George (Good performer)
+        (student7, module1, "completed", 82),
+        (student7, module2, "in_progress", 75),
+        (student7, module3, "not_started", None),
+
+        # Student 8 - Helen (Inactive, minimal progress)
+        (student8, module1, "in_progress", 25),
+        (student8, module2, "not_started", None),
+        (student8, module3, "not_started", None),
     ]
 
     for student, module, status, score in progress_data:
