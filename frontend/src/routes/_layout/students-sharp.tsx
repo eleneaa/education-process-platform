@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Search, Upload, MoreVertical } from "lucide-react"
+import { Search, Upload, MoreVertical, Users } from "lucide-react"
 import { useState, useMemo } from "react"
 
 import { importUsersCSV, getUsers } from "@/client/custom-api"
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ImportDialog } from "@/components/Common/ImportDialog"
+import { EmptyState } from "@/components/Layout"
 
 export const Route = createFileRoute("/_layout/students-sharp")({
   component: StudentsScreen,
@@ -163,7 +164,7 @@ function StudentsScreen() {
               {paginatedStudents.map((student, idx) => (
                 <div
                   key={student.id}
-                  className={`grid grid-cols-6 gap-4 px-6 py-4 items-center ${
+                  className={`grid grid-cols-6 gap-4 px-6 py-4 items-center hover:bg-surface-1 transition-colors ${
                     idx < paginatedStudents.length - 1 ? "border-b border-hair" : ""
                   }`}
                 >
@@ -196,7 +197,13 @@ function StudentsScreen() {
               ))}
             </>
           ) : (
-            <div className="text-center py-12 text-mute">Студентов не найдено</div>
+            <div className="p-6">
+              <EmptyState
+                icon={Users}
+                title="Студентов не найдено"
+                description={search ? "Попробуйте изменить поисковый запрос" : "Создайте заявку на поступление, чтобы добавить студента"}
+              />
+            </div>
           )}
         </Card>
 

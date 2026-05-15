@@ -1,72 +1,90 @@
-# Текущий статус работы (14 мая 2026)
+# Статус проекта (15 мая 2026)
 
 ## ✅ Завершено
 
 ### Backend
-- [x] Модель Attendance с статусами (present/absent/late)
-- [x] CRUD операции (create_or_update, get_by_lesson, get_by_group, update, delete)
-- [x] API endpoints: GET/POST/PATCH/DELETE /attendance
-- [x] Миграция базы данных с уникальным индексом (lesson_id + student_id)
-- [x] Все 152 теста проходят
+- [x] FastAPI с SQLModel ORM и PostgreSQL
+- [x] JWT аутентификация (HS256)
+- [x] 3 роли: admin, teacher, student с RBAC
+- [x] Все CRUD операции для основных сущностей
+- [x] Автоматическое сидирование БД при старте
+- [x] 152 теста pass
+- [x] API документация на /docs (Swagger)
 
 ### Frontend
-- [x] Типы для Attendance (AttendanceStatus, Attendance, AttendancesResponse)
-- [x] API клиент функции (getAttendance, createAttendance, updateAttendance, deleteAttendance)
-- [x] Страница группы с тремя табами:
-  - Студенты (список студентов в группе)
-  - Посещаемость (таблица с кликабельными ячейками)
-  - Прогресс (статус модулей и оценки)
-- [x] Навигация: нажатие на карточку группы открывает детали
+- [x] React 19 + TypeScript с TanStack Router (файл-ориентированная маршрутизация)
+- [x] React Query для управления состоянием данных
+- [x] Tailwind CSS 4.0 для стилизации
+- [x] Sharp/Editorial-minimalism дизайн
+- [x] Логин/выход для трех ролей
+- [x] Дашборд с реальными данными
+- [x] Управление заявками на поступление (Kanban)
+- [x] Одобрение заявок с выбором группы
+- [x] Список студентов с фильтрацией
+- [x] Программы, группы, расписание
 
 ### Данные
-- [x] Docker полностью пересобран
-- [x] База инициализирована
-- [x] Тестовые данные созданы (8 пользователей, 4 группы, 20+ занятий)
+- [x] 11 пользователей (1 admin, 2 teachers, 8 students)
+- [x] 3 программы с модулями
+- [x] 6 групп с разным статусом
+- [x] 9 заявок на поступление в разных статусах
+- [x] Полные записи о прогрессе и зачисленях
+- [x] 15 занятий с расписанием
 
-## 🚨 Проблема
+## 🚀 Готово к использованию
 
-**Страница группы не открывается при нажатии на карточку**
+### Эндпоинты API
+- `POST /login/access-token` — аутентификация
+- `GET /users/` — список пользователей
+- `GET/POST /programs/` — управление программами
+- `GET/POST /groups/` — управление группами
+- `GET/POST /admission-requests/` — управление заявками
+- `POST /admission-requests/{id}/approve` — одобрение заявки с зачислением
+- И другие CRUD операции
 
-### Что произошло
-1. Обернули Card в Link к `/groups/{groupId}`
-2. Маршрут создан в `frontend/src/routes/_layout/groups.$groupId.tsx`
-3. При нажатии на карточку ничего не происходит (или не видна ошибка)
-
-### Что проверить
-1. Открыть DevTools (F12) → Console - посмотреть ошибки
-2. Попробовать открыть URL напрямую: `http://localhost/groups/[id-группы]`
-3. Проверить, правильно ли TanStack Router распознает маршрут `$groupId`
-
-### Возможные причины
-- Проблема с синтаксисом TanStack Router (нужно проверить правильность формата `$groupId`)
-- Ошибка в компоненте GroupDetailPage при загрузке данных
-- Проблема с навигацией через Link
-
-## 📁 Файлы, которые менялись
-
-- `backend/app/models/attendance.py` - новая модель
-- `backend/app/crud/crud_attendance.py` - новые CRUD операции
-- `backend/app/api/routes/attendance.py` - новые API endpoints
-- `backend/app/api/main.py` - регистрация маршрута
-- `backend/app/models/__init__.py` - экспорт модели
-- `backend/app/crud/__init__.py` - экспорт CRUD
-- `backend/app/alembic/versions/7f9e9ea00e31_add_attendance_table.py` - миграция
-- `frontend/src/routes/_layout/groups.$groupId.tsx` - **новая страница группы**
-- `frontend/src/routes/_layout/groups.tsx` - изменена навигация на карточке
-- `frontend/src/client/custom-api.ts` - добавлены функции для attendance
-- `frontend/src/client/custom-types.ts` - добавлены типы для attendance
+### UI Функции
+- Аутентификация с JWT
+- Дашборд администратора со статистикой
+- Kanban доска для управления заявками
+- Одобрение заявок с автоматическим зачислением
+- Список студентов с поиском и фильтрацией
 
 ## 🔐 Credentials для тестирования
 
 ```
-Учитель: teacher@example.com / password123
-Админ: admin@example.com / changethis
-Студент: student1@example.com / password123
+Admin: admin@example.com / changethis
+Teacher: teacher@example.com / password123
+Student: student1@example.com / password123
 ```
 
-## 🎯 Дальнейшие действия
+## 📋 Тестовые данные
 
-1. Проверить почему не открывается страница группы
-2. Если нужно, переделать маршрутизацию (может быть использовать `useNavigate` вместо Link)
-3. Протестировать табы посещаемости и прогресса
-4. Добавить возможность редактирования посещаемости (click-to-cycle)
+При каждом запуске контейнеры автоматически заполняются:
+- Пользователи всех трех ролей
+- Программы с модулями
+- Группы с разными статусами
+- Заявки в статусах: new, in_review, approved, user_created, rejected
+- История прогресса студентов
+
+## 🎨 Дизайн
+
+- Sharp/Editorial-minimalism стиль
+- Пастельные цветовые индикаторы для статусов
+- Адаптивная верстка (работает на мобильных)
+- Скелетоны при загрузке данных
+- Toast уведомления для действий
+- Inline валидация форм
+
+## 📚 Документация
+
+- API: http://localhost:8000/docs
+- Backend код полностью типизирован (Python 3.10)
+- Frontend TypeScript 5.4
+
+## ✨ Особенности
+
+1. **Автоматическое сидирование** — БД инициализируется при запуске backend
+2. **RBAC** — разные эндпоинты для разных ролей
+3. **Одобрение заявок** — с выбором группы и автозачислением студента
+4. **Полная типизация** — backend (Pydantic models) и frontend (TypeScript)
+5. **Все тесты проходят** — 152 unit тестов backend

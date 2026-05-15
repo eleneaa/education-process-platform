@@ -84,17 +84,18 @@ function UsersPage() {
   const queryClient = useQueryClient()
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* Header Section */}
-      <div className="rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              Пользователи
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Управление учётными записями и назначение ролей
-            </p>
+    <div className="min-h-screen bg-background">
+      {/* Topbar */}
+      <div className="divider-h border-b sticky top-0 bg-background z-40">
+        <div className="flex items-center justify-between px-10 py-5 gap-4">
+          <div className="flex items-center gap-3 flex-1 max-w-sm">
+            <Search className="w-4 h-4 text-mute" />
+            <Input
+              placeholder="Поиск по имени, email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="border-0 bg-transparent text-sm placeholder:text-mute focus:ring-0"
+            />
           </div>
           <div className="flex items-center gap-3">
             <ImportDialog
@@ -117,17 +118,19 @@ function UsersPage() {
         </div>
       </div>
 
-      {/* Search + role filter */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Поиск по имени или email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 backdrop-blur-sm border-white/20 bg-white/40 dark:bg-slate-800/40"
-          />
-        </div>
+      {/* Eyebrow */}
+      <div className="px-10 py-4">
+        <div className="eyebrow">УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ</div>
+      </div>
+
+      {/* Hero */}
+      <div className="px-10 py-8">
+        <h1 className="display-hero mb-2">Пользователи</h1>
+        <p className="body-md text-mute max-w-2xl">Управление учётными записями и назначение ролей</p>
+      </div>
+
+      {/* Role Filters */}
+      <div className="px-10 py-6 border-b border-hair">
         <div className="flex gap-2 flex-wrap">
           {ROLE_FILTERS.map((f) => (
             <Button
@@ -135,7 +138,6 @@ function UsersPage() {
               size="sm"
               variant={roleFilter === f.value ? "default" : "outline"}
               onClick={() => setRoleFilter(f.value)}
-              className={roleFilter === f.value ? "bg-primary hover:bg-primary/90" : "border-white/20 hover:bg-white/10"}
             >
               {f.label}
             </Button>
@@ -144,7 +146,7 @@ function UsersPage() {
       </div>
 
       {/* Table Container */}
-      <div className="rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 bg-gradient-to-br from-white/40 to-white/20 dark:from-slate-800/40 dark:to-slate-900/20 p-6">
+      <div className="px-10 py-12">
         <Suspense fallback={<PendingUsers />}>
           <UsersTableContent search={search} roleFilter={roleFilter} />
         </Suspense>

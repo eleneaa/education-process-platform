@@ -7,11 +7,13 @@ import { getAdmissionRequests, getDashboardStats, getGroupsWithProgress, getLagg
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { EmptyState } from "@/components/Layout"
 import useAuth from "@/hooks/useAuth"
 import { StudentSchedule } from "@/components/StudentSchedule/StudentSchedule"
 import { TeacherTodayLessons } from "@/components/TeacherSchedule/TeacherTodayLessons"
 import { TeacherKPISection } from "@/components/TeacherSchedule/TeacherKPISection"
 import { TeacherLessonStats } from "@/components/TeacherSchedule/TeacherLessonStats"
+import { BarChart3, TrendingDown, Users } from "lucide-react"
 
 export const Route = createFileRoute("/_layout/")({
   component: Dashboard,
@@ -190,7 +192,7 @@ function ChartSection() {
   return (
     <div className="px-10 py-12 space-y-12">
       {/* Top Students */}
-      <div className="card-sharp p-6">
+      <div className="card-sharp p-6 bg-background">
         <h3 className="heading-sm mb-6">Топ студентов по успеваемости</h3>
         {topStudentsLoading ? (
           <div className="h-64 bg-mute/10 rounded animate-pulse" />
@@ -201,14 +203,18 @@ function ChartSection() {
               <XAxis type="number" stroke="var(--mute)" style={{ fontSize: "12px" }} />
               <YAxis dataKey="name" type="category" width={140} stroke="var(--mute)" style={{ fontSize: "12px" }} />
               <Tooltip
-                contentStyle={{ background: "var(--surface-1)", border: "1px solid var(--hair)" }}
+                contentStyle={{ background: "var(--surface-1)", border: "1px solid var(--hair)", borderRadius: "8px" }}
                 labelStyle={{ color: "var(--fg)" }}
               />
-              <Bar dataKey="value" fill="var(--accent)" radius={4} />
+              <Bar dataKey="value" fill="var(--accent)" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <div className="text-center py-12 text-mute">Нет данных о студентах</div>
+          <EmptyState
+            icon={BarChart3}
+            title="Нет данных о студентах"
+            description="Добавьте студентов в группы, чтобы увидеть их прогресс"
+          />
         )}
       </div>
 
@@ -224,20 +230,24 @@ function ChartSection() {
         ) : laggingStudents && laggingStudents.length > 0 ? (
           <div className="space-y-2">
             {laggingStudents.map((student) => (
-              <div key={student.student_id} className="flex items-center justify-between p-3 border border-hair rounded">
-                <div>
-                  <div className="font-medium">{student.student_name}</div>
-                  <div className="text-sm text-mute">{student.group_name}</div>
+              <div key={student.student_id} className="flex items-center justify-between p-3 border border-hair rounded hover:bg-surface-1 transition-colors">
+                <div className="flex-1">
+                  <div className="font-medium text-sm">{student.student_name}</div>
+                  <div className="text-xs text-mute">{student.group_name}</div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-mono">{student.progress_percentage.toFixed(0)}%</div>
-                  <div className="text-xs text-mute">{student.days_elapsed}/{student.total_days} дней</div>
+                <div className="text-right flex-shrink-0 ml-4">
+                  <div className="text-sm font-mono font-medium">{student.progress_percentage.toFixed(0)}%</div>
+                  <div className="text-xs text-mute">{student.days_elapsed}/{student.total_days} дн</div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-mute">Отстающих студентов не найдено</div>
+          <EmptyState
+            icon={TrendingDown}
+            title="Отстающих студентов не найдено"
+            description="Отличный результат! Все студенты занимаются вовремя"
+          />
         )}
       </div>
 
@@ -253,17 +263,17 @@ function ChartSection() {
         ) : groupsWithProgress && groupsWithProgress.length > 0 ? (
           <div className="space-y-2">
             {groupsWithProgress.map((group) => (
-              <div key={group.group_id} className="space-y-2 p-3 border border-hair rounded">
+              <div key={group.group_id} className="space-y-2 p-4 border border-hair rounded hover:bg-surface-1 transition-colors">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{group.group_name}</div>
-                    <div className="text-sm text-mute">{group.program_name} • {group.student_count} студ.</div>
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{group.group_name}</div>
+                    <div className="text-xs text-mute">{group.program_name} • {group.student_count} студ.</div>
                   </div>
-                  <div className="text-sm font-mono">{group.progress_percentage.toFixed(0)}%</div>
+                  <div className="text-sm font-mono font-medium ml-4">{group.progress_percentage.toFixed(0)}%</div>
                 </div>
-                <div className="w-full bg-mute/20 rounded h-2">
+                <div className="w-full bg-mute/10 rounded-full h-2">
                   <div
-                    className="bg-accent h-2 rounded"
+                    className="bg-accent h-2 rounded-full transition-all duration-300"
                     style={{ width: `${Math.min(100, group.progress_percentage)}%` }}
                   />
                 </div>
@@ -271,7 +281,11 @@ function ChartSection() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-mute">Активных групп не найдено</div>
+          <EmptyState
+            icon={Users}
+            title="Активных групп не найдено"
+            description="Создайте новую группу, чтобы начать обучение"
+          />
         )}
       </div>
     </div>
