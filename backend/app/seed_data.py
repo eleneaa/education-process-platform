@@ -3,13 +3,14 @@ import logging
 from datetime import datetime, timedelta
 from sqlmodel import Session, select
 
-from app.models.enums import UserRole, ProgramStatus, GroupStatus, EnrollmentStatus
+from app.models.enums import UserRole, ProgramStatus, GroupStatus, EnrollmentStatus, AdmissionRequestSource, AdmissionRequestStatus
 from app.models import (
     User, UserCreate, Program, ProgramCreate, Group, GroupCreate,
     Enrollment, EnrollmentCreate, Progress, ProgressCreate,
-    Module, ModuleCreate, Lesson, LessonCreate, ProgramTeacher
+    Module, ModuleCreate, Lesson, LessonCreate, ProgramTeacher,
+    AdmissionRequest, AdmissionRequestCreate
 )
-from app.crud import crud_user, crud_program, crud_module, crud_group, crud_enrollment, crud_progress, crud_lesson
+from app.crud import crud_user, crud_program, crud_module, crud_group, crud_enrollment, crud_progress, crud_lesson, crud_admission_request
 
 logger = logging.getLogger(__name__)
 
@@ -466,6 +467,119 @@ def seed_database(session: Session) -> None:
             )
             crud_lesson.create_lesson(session=session, lesson_create=lesson_in)
             logger.info(f"✓ Created lesson: {title}")
+
+    # ==================== ADMISSION REQUESTS ====================
+    # Create admission requests in various statuses for testing the kanban board
+    admission_requests_data = [
+        # New requests
+        {
+            "full_name": "Иван Петров",
+            "email": "ivan.petrov@mail.com",
+            "phone_number": "+7 (999) 111-11-11",
+            "program_interest": "Python для начинающих",
+            "source": AdmissionRequestSource.WEBSITE,
+            "status": AdmissionRequestStatus.NEW,
+            "assigned_to_id": None,
+        },
+        {
+            "full_name": "Мария Сидорова",
+            "email": "maria.sidorova@mail.com",
+            "phone_number": "+7 (999) 222-22-22",
+            "program_interest": "Веб-разработка",
+            "source": AdmissionRequestSource.TELEGRAM,
+            "status": AdmissionRequestStatus.NEW,
+            "assigned_to_id": None,
+        },
+        # In review requests
+        {
+            "full_name": "Александр Козлов",
+            "email": "alex.kozlov@mail.com",
+            "phone_number": "+7 (999) 333-33-33",
+            "program_interest": "Frontend разработка",
+            "source": AdmissionRequestSource.WEBSITE,
+            "status": AdmissionRequestStatus.IN_REVIEW,
+            "assigned_to_id": teacher1.id,
+        },
+        {
+            "full_name": "Ольга Смирнова",
+            "email": "olga.smirnova@mail.com",
+            "phone_number": "+7 (999) 444-44-44",
+            "program_interest": "Data Science",
+            "source": AdmissionRequestSource.EMAIL,
+            "status": AdmissionRequestStatus.IN_REVIEW,
+            "assigned_to_id": teacher2.id,
+        },
+        # Approved requests
+        {
+            "full_name": "Дмитрий Ваванов",
+            "email": "dmitry.vavanov@mail.com",
+            "phone_number": "+7 (999) 555-55-55",
+            "program_interest": "Python для начинающих",
+            "source": AdmissionRequestSource.WEBSITE,
+            "status": AdmissionRequestStatus.APPROVED,
+            "assigned_to_id": None,
+        },
+        {
+            "full_name": "Елена Морозова",
+            "email": "elena.morozova@mail.com",
+            "phone_number": "+7 (999) 666-66-66",
+            "program_interest": "Веб-разработка",
+            "source": AdmissionRequestSource.PHONE,
+            "status": AdmissionRequestStatus.APPROVED,
+            "assigned_to_id": None,
+        },
+        # User created requests
+        {
+            "full_name": "Константин Новиков",
+            "email": "konstantin.novikov@mail.com",
+            "phone_number": "+7 (999) 777-77-77",
+            "program_interest": "Frontend разработка",
+            "source": AdmissionRequestSource.OFFLINE,
+            "status": AdmissionRequestStatus.USER_CREATED,
+            "assigned_to_id": None,
+        },
+        {
+            "full_name": "Виктория Лебедева",
+            "email": "victoria.lebedeva@mail.com",
+            "phone_number": "+7 (999) 888-88-88",
+            "program_interest": "Data Science",
+            "source": AdmissionRequestSource.WEBSITE,
+            "status": AdmissionRequestStatus.USER_CREATED,
+            "assigned_to_id": None,
+        },
+        # Rejected request
+        {
+            "full_name": "Сергей Волков",
+            "email": "sergey.volkov@mail.com",
+            "phone_number": "+7 (999) 999-99-99",
+            "program_interest": "Невалидная программа",
+            "source": AdmissionRequestSource.WEBSITE,
+            "status": AdmissionRequestStatus.REJECTED,
+            "assigned_to_id": None,
+        },
+    ]
+
+    for req_data in admission_requests_data:
+        existing = session.exec(
+            select(AdmissionRequest).where(AdmissionRequest.email == req_data["email"])
+        ).first()
+        if not existing:
+            status = req_data.pop("status")
+            assigned_to_id = req_data.pop("assigned_to_id")
+
+            admission_request_in = AdmissionRequestCreate(**req_data)
+            admission_request = crud_admission_request.create_admission_request(
+                session=session,
+                admission_request_create=admission_request_in,
+            )
+
+            # Update status and assigned_to after creation
+            admission_request.status = status
+            admission_request.assigned_to_id = assigned_to_id
+            session.add(admission_request)
+            session.flush()
+
+            logger.info(f"✓ Created admission request: {req_data['full_name']} ({status})")
 
     logger.info("✓ Database seeding completed!")
     session.flush()
