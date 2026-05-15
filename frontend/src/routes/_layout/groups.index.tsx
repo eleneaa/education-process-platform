@@ -409,29 +409,31 @@ function GroupsPage() {
 
 
   // Queries
-  const { data: groups = [] } = useQuery({
+  const { data: groups = [], isLoading: groupsLoading } = useQuery({
     queryKey: ["groups"],
     queryFn: () => getGroups(),
     select: (data) => data.data ?? [],
   })
 
-  const { data: enrollments = [] } = useQuery({
+  const { data: enrollments = [], isLoading: enrollmentsLoading } = useQuery({
     queryKey: ["enrollments"],
     queryFn: () => getEnrollments(),
     select: (data) => data.data ?? [],
   })
 
-  const { data: programs = [] } = useQuery({
+  const { data: programs = [], isLoading: programsLoading } = useQuery({
     queryKey: ["programs"],
     queryFn: () => getPrograms(),
     select: (data) => data.data ?? [],
   })
 
-  const { data: users = [] } = useQuery({
+  const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["users"],
     queryFn: () => getUsers(),
     select: (data) => data.data ?? [],
   })
+
+  const isDataLoading = groupsLoading || enrollmentsLoading || programsLoading || usersLoading
 
   // Mutations
   const createGroupMutation = useMutation({
@@ -597,7 +599,13 @@ function GroupsPage() {
             : "space-y-3"
         }
       >
-        {filteredGroups.length > 0 ? (
+        {isDataLoading ? (
+          <>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-48 bg-surface-2 rounded-2xl animate-pulse border border-hair" />
+            ))}
+          </>
+        ) : filteredGroups.length > 0 ? (
           filteredGroups.map((group) => (
             <GroupCard
               key={group.id}

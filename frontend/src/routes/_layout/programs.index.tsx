@@ -264,20 +264,22 @@ function ProgramsPage() {
   const isAdmin = currentUser?.role?.toLowerCase() === "admin" || currentUser?.is_superuser
   const isStudent = currentUser?.role?.toLowerCase() === "student"
 
-  const { data: programsResponse } = useQuery({
+  const { data: programsResponse, isLoading: programsLoading } = useQuery({
     queryKey: ["programs"],
     queryFn: getPrograms,
   })
 
-  const { data: modulesResponse } = useQuery({
+  const { data: modulesResponse, isLoading: modulesLoading } = useQuery({
     queryKey: ["modules"],
     queryFn: () => getModules(),
   })
 
-  const { data: groupsResponse } = useQuery({
+  const { data: groupsResponse, isLoading: groupsLoading } = useQuery({
     queryKey: ["groups"],
     queryFn: () => getGroups(),
   })
+
+  const isDataLoading = programsLoading || modulesLoading || groupsLoading
 
   const programs = programsResponse?.data ?? []
   const modules = modulesResponse?.data ?? []
@@ -435,7 +437,13 @@ function ProgramsPage() {
       )}
 
       <div className="px-10 py-12">
-        {filteredPrograms.length > 0 ? (
+        {isDataLoading ? (
+          <div className="grid grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-64 bg-surface-2 rounded-2xl animate-pulse border border-hair" />
+            ))}
+          </div>
+        ) : filteredPrograms.length > 0 ? (
           <div className="grid grid-cols-3 gap-6">
             {filteredPrograms.map((program) => (
               <div key={program.id}>
