@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { FileDown, Plus, Search, Upload, MoreVertical, Copy, Check } from "lucide-react"
+import { FileDown, Plus, Search, Upload, MoreVertical, Copy, Check, AlertCircle } from "lucide-react"
 import { useState, useMemo } from "react"
 
 import {
@@ -104,6 +104,7 @@ function DetailsDialog({
     comment: "",
     source: "website",
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Update formData when request changes
   useMemo(() => {
@@ -116,11 +117,25 @@ function DetailsDialog({
         comment: request.comment || "",
         source: request.source || "website",
       })
+      setErrors({})
     }
   }, [request?.id, open])
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+    if (!formData.full_name.trim()) newErrors.full_name = "ФИО обязательно"
+    if (!formData.phone_number.trim()) newErrors.phone_number = "Телефон обязателен"
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Некорректный email"
+    }
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleSave = () => {
-    onSave(formData)
+    if (validateForm()) {
+      onSave(formData)
+    }
   }
 
   if (!request) return null
@@ -133,29 +148,41 @@ function DetailsDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label className="text-sm font-medium">ФИО</Label>
+            <Label className={`text-sm font-medium ${errors.full_name ? "text-red-500" : ""}`}>ФИО</Label>
             <Input
               value={formData.full_name}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              className="mt-1"
+              onChange={(e) => {
+                setFormData({ ...formData, full_name: e.target.value })
+                if (errors.full_name) setErrors({ ...errors, full_name: "" })
+              }}
+              className={`mt-1 ${errors.full_name ? "border-red-500 focus:ring-red-500" : ""}`}
             />
+            {errors.full_name && <p className="text-xs text-red-500 mt-1">{errors.full_name}</p>}
           </div>
           <div>
-            <Label className="text-sm font-medium">Email</Label>
+            <Label className={`text-sm font-medium ${errors.email ? "text-red-500" : ""}`}>Email</Label>
             <Input
               type="email"
               value={formData.email || ""}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="mt-1"
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value })
+                if (errors.email) setErrors({ ...errors, email: "" })
+              }}
+              className={`mt-1 ${errors.email ? "border-red-500 focus:ring-red-500" : ""}`}
             />
+            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
           </div>
           <div>
-            <Label className="text-sm font-medium">Телефон</Label>
+            <Label className={`text-sm font-medium ${errors.phone_number ? "text-red-500" : ""}`}>Телефон</Label>
             <Input
               value={formData.phone_number}
-              onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-              className="mt-1"
+              onChange={(e) => {
+                setFormData({ ...formData, phone_number: e.target.value })
+                if (errors.phone_number) setErrors({ ...errors, phone_number: "" })
+              }}
+              className={`mt-1 ${errors.phone_number ? "border-red-500 focus:ring-red-500" : ""}`}
             />
+            {errors.phone_number && <p className="text-xs text-red-500 mt-1">{errors.phone_number}</p>}
           </div>
           <div>
             <Label className="text-sm font-medium">Интерес к программе</Label>
@@ -288,6 +315,7 @@ function CreateRequestDialog({
   const [phone, setPhone] = useState("")
   const [programInterest, setProgramInterest] = useState("")
   const [source, setSource] = useState("website")
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const mutation = useMutation({
     mutationFn: createAdmissionRequest,
@@ -300,13 +328,25 @@ function CreateRequestDialog({
       setPhone("")
       setProgramInterest("")
       setSource("website")
+      setErrors({})
     },
     onError: () => showErrorToast("Ошибка при создании заявки"),
   })
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+    if (!fullName.trim()) newErrors.fullName = "ФИО обязательно"
+    if (!phone.trim()) newErrors.phone = "Телефон обязателен"
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Некорректный email"
+    }
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!fullName.trim() || !phone.trim()) return
+    if (!validateForm()) return
     mutation.mutate({
       full_name: fullName.trim(),
       email: email.trim() || null,
@@ -324,43 +364,55 @@ function CreateRequestDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="name" className="text-sm font-medium">
+            <Label htmlFor="name" className={`text-sm font-medium ${errors.fullName ? "text-red-500" : ""}`}>
               ФИО *
             </Label>
             <Input
               id="name"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={(e) => {
+                setFullName(e.target.value)
+                if (errors.fullName) setErrors({ ...errors, fullName: "" })
+              }}
               placeholder="Иванов Иван"
-              className="mt-1"
+              className={`mt-1 ${errors.fullName ? "border-red-500 focus:ring-red-500" : ""}`}
               required
             />
+            {errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}
           </div>
           <div>
-            <Label htmlFor="phone" className="text-sm font-medium">
+            <Label htmlFor="phone" className={`text-sm font-medium ${errors.phone ? "text-red-500" : ""}`}>
               Телефон *
             </Label>
             <Input
               id="phone"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                setPhone(e.target.value)
+                if (errors.phone) setErrors({ ...errors, phone: "" })
+              }}
               placeholder="+7 (999) 000-00-00"
-              className="mt-1"
+              className={`mt-1 ${errors.phone ? "border-red-500 focus:ring-red-500" : ""}`}
               required
             />
+            {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
           </div>
           <div>
-            <Label htmlFor="email" className="text-sm font-medium">
+            <Label htmlFor="email" className={`text-sm font-medium ${errors.email ? "text-red-500" : ""}`}>
               Email
             </Label>
             <Input
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                if (errors.email) setErrors({ ...errors, email: "" })
+              }}
               placeholder="example@mail.com"
-              className="mt-1"
+              className={`mt-1 ${errors.email ? "border-red-500 focus:ring-red-500" : ""}`}
             />
+            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
           </div>
           <div>
             <Label htmlFor="program" className="text-sm font-medium">
@@ -392,7 +444,14 @@ function CreateRequestDialog({
             </Select>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false)
+                setErrors({})
+              }}
+            >
               Отмена
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
@@ -417,6 +476,7 @@ interface KanbanColumnProps {
   onCreateUser: (requestId: string) => void
   onOpenDetails: (request: AdmissionRequest) => void
   admins: Array<{ id: string; email: string; full_name: string | null }>
+  isLoading?: boolean
 }
 
 function KanbanColumn({
@@ -429,6 +489,7 @@ function KanbanColumn({
   onCreateUser,
   onOpenDetails,
   admins,
+  isLoading = false,
 }: KanbanColumnProps) {
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -458,79 +519,95 @@ function KanbanColumn({
 
       {/* Cards */}
       <div className="flex flex-col gap-3 flex-1">
-        {requests.map((req) => (
-          <Card
-            key={req.id}
-            className="border-hair rounded-2xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-move hover:bg-surface-1"
-            draggable
-            onDragStart={(e) => e.dataTransfer.setData("requestId", req.id)}
-            onClick={() => onOpenDetails(req)}
-          >
-            {/* Header: ID + Date */}
-            <div className="flex items-start justify-between gap-2">
-              <span className="mono text-xs text-mute">#{req.id.slice(0, 8)}</span>
-              <span className="mono text-xs text-mute">
-                {req.created_at
-                  ? new Date(req.created_at).toLocaleDateString("ru-RU", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : "—"}
-              </span>
-            </div>
-
-            {/* Name */}
-            <div>
-              <p className="body-sm text-fg font-medium">{req.full_name}</p>
-            </div>
-
-            {/* Program Interest */}
-            {req.program_interest && <p className="body-xs text-mute line-clamp-1">{req.program_interest}</p>}
-
-            {/* Admin assignment (in_review status) */}
-            {status === "in_review" && (
-              <div className="pt-2" onClick={(e) => e.stopPropagation()}>
-                <Label className="text-xs font-medium">Ответственный</Label>
-                <Select
-                  value={req.assigned_to_id || "_none"}
-                  onValueChange={(value) => onAssignedToChange(req.id, value === "_none" ? null : value)}
-                >
-                  <SelectTrigger className="mt-1 h-8">
-                    <SelectValue placeholder="Выберите..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">Не назначен</SelectItem>
-                    {admins.map((admin) => (
-                      <SelectItem key={admin.id} value={admin.id}>
-                        {admin.full_name || admin.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        {isLoading && (
+          <>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-32 bg-surface-2 rounded-2xl animate-pulse border border-hair" />
+            ))}
+          </>
+        )}
+        {!isLoading &&
+          requests.map((req) => (
+            <Card
+              key={req.id}
+              className="border-hair rounded-2xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-move hover:bg-surface-1"
+              draggable
+              onDragStart={(e) => e.dataTransfer.setData("requestId", req.id)}
+              onClick={() => onOpenDetails(req)}
+            >
+              {/* Header: ID + Date */}
+              <div className="flex items-start justify-between gap-2">
+                <span className="mono text-xs text-mute">#{req.id.slice(0, 8)}</span>
+                <span className="mono text-xs text-mute">
+                  {req.created_at
+                    ? new Date(req.created_at).toLocaleDateString("ru-RU", {
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "—"}
+                </span>
               </div>
-            )}
 
-            {/* Create user button (approved status only, not user_created) */}
-            {status === "approved" && (
-              <div className="pt-2" onClick={(e) => e.stopPropagation()}>
-                <Button
-                  size="sm"
-                  className="w-full"
-                  onClick={() => onCreateUser(req.id)}
-                >
-                  Создать аккаунт
-                </Button>
+              {/* Name */}
+              <div>
+                <p className="body-sm text-fg font-medium">{req.full_name}</p>
               </div>
-            )}
 
-            {/* Footer: Source */}
-            <div className="flex items-center justify-between pt-2 border-t border-hair">
-              <span className="label-sm text-mute">{SOURCE_LABELS[req.source] || req.source}</span>
-              <span className="label-sm text-mute text-xs">⋮⋮⋮ перетащи</span>
+              {/* Program Interest */}
+              {req.program_interest && <p className="body-xs text-mute line-clamp-1">{req.program_interest}</p>}
+
+              {/* Admin assignment (in_review status) */}
+              {status === "in_review" && (
+                <div className="pt-2" onClick={(e) => e.stopPropagation()}>
+                  <Label className="text-xs font-medium">Ответственный</Label>
+                  <Select
+                    value={req.assigned_to_id || "_none"}
+                    onValueChange={(value) => onAssignedToChange(req.id, value === "_none" ? null : value)}
+                  >
+                    <SelectTrigger className="mt-1 h-8">
+                      <SelectValue placeholder="Выберите..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">Не назначен</SelectItem>
+                      {admins.map((admin) => (
+                        <SelectItem key={admin.id} value={admin.id}>
+                          {admin.full_name || admin.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Create user button (approved status only, not user_created) */}
+              {status === "approved" && (
+                <div className="pt-2" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    onClick={() => onCreateUser(req.id)}
+                  >
+                    Создать аккаунт
+                  </Button>
+                </div>
+              )}
+
+              {/* Footer: Source */}
+              <div className="flex items-center justify-between pt-2 border-t border-hair">
+                <span className="label-sm text-mute">{SOURCE_LABELS[req.source] || req.source}</span>
+                <span className="label-sm text-mute text-xs">⋮⋮⋮ перетащи</span>
+              </div>
+            </Card>
+          ))}
+        {!isLoading && requests.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center min-h-[300px] rounded-lg border border-dashed border-border bg-surface-secondary opacity-50">
+            <div className="w-12 h-12 rounded-full bg-mute/10 flex items-center justify-center mb-3">
+              <FileDown className="w-6 h-6 text-mute" />
             </div>
-          </Card>
-        ))}
-        {requests.length === 0 && <div className="text-center py-8 text-mute text-sm">Нет заявок</div>}
+            <p className="label-sm text-mute">Нет заявок</p>
+            <p className="text-xs text-mute/70 mt-1">В этой колонке пока нет заявок</p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -553,7 +630,7 @@ function AdmissionRequestsPage() {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<AdmissionRequest | undefined>()
 
-  const { data: requestsResponse } = useQuery({
+  const { data: requestsResponse, isLoading } = useQuery({
     queryKey: ["admission-requests"],
     queryFn: getAdmissionRequests,
   })
@@ -742,6 +819,7 @@ function AdmissionRequestsPage() {
               setDetailsDialogOpen(true)
             }}
             admins={admins}
+            isLoading={isLoading}
           />
           <KanbanColumn
             status="in_review"
@@ -756,6 +834,7 @@ function AdmissionRequestsPage() {
               setDetailsDialogOpen(true)
             }}
             admins={admins}
+            isLoading={isLoading}
           />
           <KanbanColumn
             status="approved"
@@ -770,6 +849,7 @@ function AdmissionRequestsPage() {
               setDetailsDialogOpen(true)
             }}
             admins={admins}
+            isLoading={isLoading}
           />
           <KanbanColumn
             status="user_created"
@@ -784,6 +864,7 @@ function AdmissionRequestsPage() {
               setDetailsDialogOpen(true)
             }}
             admins={admins}
+            isLoading={isLoading}
           />
           <KanbanColumn
             status="rejected"
@@ -798,6 +879,7 @@ function AdmissionRequestsPage() {
               setDetailsDialogOpen(true)
             }}
             admins={admins}
+            isLoading={isLoading}
           />
         </div>
       </div>
