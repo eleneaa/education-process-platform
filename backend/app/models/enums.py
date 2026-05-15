@@ -18,6 +18,7 @@ class AdmissionRequestStatus(str, Enum):
     NEW = "new"
     IN_REVIEW = "in_review"
     APPROVED = "approved"
+    USER_CREATED = "user_created"
     REJECTED = "rejected"
 
 class ProgramStatus(str, Enum):

@@ -338,6 +338,15 @@ export async function approveAdmissionRequest(
   return data
 }
 
+export async function createUserFromAdmission(
+  id: string,
+): Promise<{ id: string; email: string | null; full_name: string | null; password: string }> {
+  const { data } = await api.post(
+    `/admission-requests/${id}/create-user`,
+  )
+  return data
+}
+
 // ─── Lessons ─────────────────────────────────────────────────────────────────
 
 export async function getLessons(groupId?: string): Promise<LessonsResponse> {

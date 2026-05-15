@@ -8,6 +8,7 @@ import {
   getAdmissionRequests,
   updateAdmissionRequest,
   importAdmissionRequestsCSV,
+  createUserFromAdmission,
 } from "@/client/custom-api"
 import type { AdmissionRequest } from "@/client/custom-types"
 import { Badge } from "@/components/ui/badge"
@@ -44,6 +45,7 @@ const STATUS_LABELS: Record<string, string> = {
   new: "Новые",
   in_review: "На проверке",
   approved: "Одобрена",
+  user_created: "Аккаунт создан",
   rejected: "Отклонена",
 }
 
@@ -508,7 +510,7 @@ function KanbanColumn({
               </div>
             )}
 
-            {/* Create user button (approved status) */}
+            {/* Create user button (approved status only, not user_created) */}
             {status === "approved" && (
               <div className="pt-2" onClick={(e) => e.stopPropagation()}>
                 <Button
@@ -592,24 +594,23 @@ function AdmissionRequestsPage() {
   })
 
   const createUserMutation = useMutation({
-    mutationFn: (id: string) =>
-      fetch(`/api/v1/admission-requests/${id}/create-user`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-      }).then((r) => r.json()),
+    mutationFn: createUserFromAdmission,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["admission-requests"] })
       setCreatedUserData({
         email: data.email,
         password: data.password,
         fullName: data.full_name,
       })
       setCreateUserDialogOpen(true)
-      showSuccessToast("Аккаунт создан")
+      showSuccessToast("Аккаунт создан! Карточка перенесена в 'Аккаунт создан'")
+      // Invalidate and refetch to move card to user_created column
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["admission-requests"] })
+      }, 500)
     },
-    onError: () => showErrorToast("Ошибка при создании аккаунта"),
+    onError: () => {
+      showErrorToast("Ошибка при создании аккаунта")
+    },
   })
 
   const saveDetailsMutation = useMutation({
@@ -642,6 +643,7 @@ function AdmissionRequestsPage() {
       new: filteredRequests.filter((r) => r.status === "new"),
       in_review: filteredRequests.filter((r) => r.status === "in_review"),
       approved: filteredRequests.filter((r) => r.status === "approved"),
+      user_created: filteredRequests.filter((r) => r.status === "user_created"),
       rejected: filteredRequests.filter((r) => r.status === "rejected"),
     }
   }, [filteredRequests])
@@ -770,9 +772,23 @@ function AdmissionRequestsPage() {
             admins={admins}
           />
           <KanbanColumn
+            status="user_created"
+            title="Аккаунт создан"
+            index={3}
+            requests={requestsByStatus.user_created}
+            onStatusChange={handleStatusChange}
+            onAssignedToChange={handleAssignedToChange}
+            onCreateUser={handleCreateUser}
+            onOpenDetails={(req) => {
+              setSelectedRequest(req)
+              setDetailsDialogOpen(true)
+            }}
+            admins={admins}
+          />
+          <KanbanColumn
             status="rejected"
             title="Отклонена"
-            index={3}
+            index={4}
             requests={requestsByStatus.rejected}
             onStatusChange={handleStatusChange}
             onAssignedToChange={handleAssignedToChange}

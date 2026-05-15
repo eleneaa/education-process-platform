@@ -290,20 +290,14 @@ def create_user_from_admission(
             detail="Admission request not found",
         )
 
-    if admission_request.status == "approved":
-        raise HTTPException(
-            status_code=400,
-            detail="User already created for this admission request",
-        )
-
     # Check if user already exists
     existing_user = session.exec(
         select(User).where(User.email == admission_request.email)
     ).first()
 
     if existing_user:
-        # User exists, just update admission request status
-        admission_request.status = "approved"
+        # User exists, update status to user_created
+        admission_request.status = "user_created"
         session.add(admission_request)
         session.commit()
         session.refresh(admission_request)
@@ -328,8 +322,8 @@ def create_user_from_admission(
     )
     user = create_user(session=session, user_create=user_create)
 
-    # Update admission request status
-    admission_request.status = "approved"
+    # Update status to user_created
+    admission_request.status = "user_created"
     session.add(admission_request)
     session.commit()
     session.refresh(admission_request)

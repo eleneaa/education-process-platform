@@ -40,7 +40,7 @@ def upgrade():
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.Column('status', sa.Enum('NEW', 'IN_REVIEW', 'APPROVED', 'REJECTED', name='admissionrequeststatus'), nullable=False),
+    sa.Column('status', sa.Enum('NEW', 'IN_REVIEW', 'APPROVED', 'USER_CREATED', 'REJECTED', name='admissionrequeststatus'), nullable=False),
     sa.Column('assigned_to_id', sa.Uuid(), nullable=True),
     sa.ForeignKeyConstraint(['assigned_to_id'], ['user.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
