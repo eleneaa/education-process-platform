@@ -95,13 +95,27 @@ function DetailsDialog({
   isSaving: boolean
 }) {
   const [formData, setFormData] = useState({
-    full_name: request?.full_name || "",
-    email: request?.email || "",
-    phone_number: request?.phone_number || "",
-    program_interest: request?.program_interest || "",
-    comment: request?.comment || "",
-    source: request?.source || "website",
+    full_name: "",
+    email: "",
+    phone_number: "",
+    program_interest: "",
+    comment: "",
+    source: "website",
   })
+
+  // Update formData when request changes
+  useMemo(() => {
+    if (request) {
+      setFormData({
+        full_name: request.full_name || "",
+        email: request.email || "",
+        phone_number: request.phone_number || "",
+        program_interest: request.program_interest || "",
+        comment: request.comment || "",
+        source: request.source || "website",
+      })
+    }
+  }, [request?.id, open])
 
   const handleSave = () => {
     onSave(formData)
